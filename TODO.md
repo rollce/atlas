@@ -204,8 +204,8 @@ Goal: production-style B2B SaaS to demonstrate multi-tenant architecture, RBAC, 
 
 - [ ] Unit tests for core services
 - [x] Integration tests for auth
-- [ ] Integration tests for tenant isolation
-- [ ] Integration tests for RBAC
+- [x] Integration tests for tenant isolation
+- [x] Integration tests for RBAC
 - [x] API tests for critical business flows
 - [ ] Smoke tests for deployments
 - [ ] Seed test fixtures
