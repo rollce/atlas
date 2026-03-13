@@ -5,6 +5,7 @@ import {
   Container,
   Group,
   List,
+  ListItem,
   SimpleGrid,
   Text,
   Title,
@@ -78,7 +79,7 @@ export default function PricingPage() {
             </Text>
             <List spacing="xs" mb="md">
               {plan.features.map((feature) => (
-                <List.Item key={feature}>{feature}</List.Item>
+                <ListItem key={feature}>{feature}</ListItem>
               ))}
             </List>
             <Button

@@ -1,4 +1,16 @@
-import { Avatar, Badge, Button, Card, Group, Table } from "@mantine/core";
+import {
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  Group,
+  Table,
+  TableTbody,
+  TableTd,
+  TableTh,
+  TableThead,
+  TableTr,
+} from "@mantine/core";
 import { IconUserPlus } from "@tabler/icons-react";
 import { PageHeader } from "@/components/page-header";
 
@@ -17,47 +29,47 @@ export default function MembersPage() {
 
       <Card withBorder radius="lg" p="lg" bg="dark.6">
         <Table striped highlightOnHover>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>User</Table.Th>
-              <Table.Th>Role</Table.Th>
-              <Table.Th>Status</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            <Table.Tr>
-              <Table.Td>
+          <TableThead>
+            <TableTr>
+              <TableTh>User</TableTh>
+              <TableTh>Role</TableTh>
+              <TableTh>Status</TableTh>
+            </TableTr>
+          </TableThead>
+          <TableTbody>
+            <TableTr>
+              <TableTd>
                 <Group>
                   <Avatar color="teal">DR</Avatar>
                   Denis Rollsev
                 </Group>
-              </Table.Td>
-              <Table.Td>
+              </TableTd>
+              <TableTd>
                 <Badge color="teal">Owner</Badge>
-              </Table.Td>
-              <Table.Td>
+              </TableTd>
+              <TableTd>
                 <Badge color="blue" variant="light">
                   Active
                 </Badge>
-              </Table.Td>
-            </Table.Tr>
-            <Table.Tr>
-              <Table.Td>
+              </TableTd>
+            </TableTr>
+            <TableTr>
+              <TableTd>
                 <Group>
                   <Avatar color="cyan">MP</Avatar>
                   Maria Petrova
                 </Group>
-              </Table.Td>
-              <Table.Td>
+              </TableTd>
+              <TableTd>
                 <Badge color="grape">Manager</Badge>
-              </Table.Td>
-              <Table.Td>
+              </TableTd>
+              <TableTd>
                 <Badge color="yellow" variant="light">
                   Invited
                 </Badge>
-              </Table.Td>
-            </Table.Tr>
-          </Table.Tbody>
+              </TableTd>
+            </TableTr>
+          </TableTbody>
         </Table>
       </Card>
     </>

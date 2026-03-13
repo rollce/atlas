@@ -2,6 +2,7 @@ import {
   Badge,
   Card,
   Grid,
+  GridCol,
   Group,
   ScrollArea,
   Stack,
@@ -26,7 +27,7 @@ export default function TasksPage() {
 
       <Grid>
         {Object.entries(columns).map(([column, items]) => (
-          <Grid.Col key={column} span={{ base: 12, md: 6, xl: 3 }}>
+          <GridCol key={column} span={{ base: 12, md: 6, xl: 3 }}>
             <Card withBorder radius="lg" p="md" bg="dark.6" h="100%">
               <Group justify="space-between" mb="sm">
                 <Text fw={600}>{column}</Text>
@@ -44,7 +45,7 @@ export default function TasksPage() {
                 </Stack>
               </ScrollArea>
             </Card>
-          </Grid.Col>
+          </GridCol>
         ))}
       </Grid>
     </>

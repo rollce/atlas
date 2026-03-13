@@ -2,10 +2,17 @@ import {
   Badge,
   Card,
   Group,
-  Progress,
+  ProgressLabel,
+  ProgressRoot,
+  ProgressSection,
   RingProgress,
   SimpleGrid,
   Table,
+  TableTbody,
+  TableTd,
+  TableTh,
+  TableThead,
+  TableTr,
   Text,
 } from "@mantine/core";
 import { PageHeader } from "@/components/page-header";
@@ -57,41 +64,41 @@ export default function DashboardPage() {
           <Text fw={600} mb="md">
             Delivery Velocity
           </Text>
-          <Progress.Root size={24} radius="xl">
-            <Progress.Section value={62} color="teal">
-              <Progress.Label>Build</Progress.Label>
-            </Progress.Section>
-            <Progress.Section value={24} color="blue">
-              <Progress.Label>Review</Progress.Label>
-            </Progress.Section>
-            <Progress.Section value={14} color="gray">
-              <Progress.Label>Backlog</Progress.Label>
-            </Progress.Section>
-          </Progress.Root>
+          <ProgressRoot size={24} radius="xl">
+            <ProgressSection value={62} color="teal">
+              <ProgressLabel>Build</ProgressLabel>
+            </ProgressSection>
+            <ProgressSection value={24} color="blue">
+              <ProgressLabel>Review</ProgressLabel>
+            </ProgressSection>
+            <ProgressSection value={14} color="gray">
+              <ProgressLabel>Backlog</ProgressLabel>
+            </ProgressSection>
+          </ProgressRoot>
 
           <Table mt="lg" striped highlightOnHover>
-            <Table.Thead>
-              <Table.Tr>
-                <Table.Th>Workspace</Table.Th>
-                <Table.Th>On-time</Table.Th>
-                <Table.Th>Overdue</Table.Th>
-                <Table.Th>Utilization</Table.Th>
-              </Table.Tr>
-            </Table.Thead>
-            <Table.Tbody>
-              <Table.Tr>
-                <Table.Td>Atlas Demo Org</Table.Td>
-                <Table.Td>82%</Table.Td>
-                <Table.Td>8</Table.Td>
-                <Table.Td>74%</Table.Td>
-              </Table.Tr>
-              <Table.Tr>
-                <Table.Td>Northline Studio</Table.Td>
-                <Table.Td>77%</Table.Td>
-                <Table.Td>11</Table.Td>
-                <Table.Td>69%</Table.Td>
-              </Table.Tr>
-            </Table.Tbody>
+            <TableThead>
+              <TableTr>
+                <TableTh>Workspace</TableTh>
+                <TableTh>On-time</TableTh>
+                <TableTh>Overdue</TableTh>
+                <TableTh>Utilization</TableTh>
+              </TableTr>
+            </TableThead>
+            <TableTbody>
+              <TableTr>
+                <TableTd>Atlas Demo Org</TableTd>
+                <TableTd>82%</TableTd>
+                <TableTd>8</TableTd>
+                <TableTd>74%</TableTd>
+              </TableTr>
+              <TableTr>
+                <TableTd>Northline Studio</TableTd>
+                <TableTd>77%</TableTd>
+                <TableTd>11</TableTd>
+                <TableTd>69%</TableTd>
+              </TableTr>
+            </TableTbody>
           </Table>
         </Card>
 

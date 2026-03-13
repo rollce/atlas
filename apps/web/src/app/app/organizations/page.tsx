@@ -1,4 +1,15 @@
-import { Badge, Button, Card, Table, Text } from "@mantine/core";
+import {
+  Badge,
+  Button,
+  Card,
+  Table,
+  TableTbody,
+  TableTd,
+  TableTh,
+  TableThead,
+  TableTr,
+  Text,
+} from "@mantine/core";
 import { IconPlus } from "@tabler/icons-react";
 import { PageHeader } from "@/components/page-header";
 
@@ -17,32 +28,32 @@ export default function OrganizationsPage() {
 
       <Card withBorder radius="lg" p="lg" bg="dark.6">
         <Table striped highlightOnHover>
-          <Table.Thead>
-            <Table.Tr>
-              <Table.Th>Name</Table.Th>
-              <Table.Th>Plan</Table.Th>
-              <Table.Th>Members</Table.Th>
-              <Table.Th>Status</Table.Th>
-            </Table.Tr>
-          </Table.Thead>
-          <Table.Tbody>
-            <Table.Tr>
-              <Table.Td>Atlas Demo Org</Table.Td>
-              <Table.Td>Pro</Table.Td>
-              <Table.Td>7</Table.Td>
-              <Table.Td>
+          <TableThead>
+            <TableTr>
+              <TableTh>Name</TableTh>
+              <TableTh>Plan</TableTh>
+              <TableTh>Members</TableTh>
+              <TableTh>Status</TableTh>
+            </TableTr>
+          </TableThead>
+          <TableTbody>
+            <TableTr>
+              <TableTd>Atlas Demo Org</TableTd>
+              <TableTd>Pro</TableTd>
+              <TableTd>7</TableTd>
+              <TableTd>
                 <Badge color="teal">Healthy</Badge>
-              </Table.Td>
-            </Table.Tr>
-            <Table.Tr>
-              <Table.Td>Northline Studio</Table.Td>
-              <Table.Td>Business</Table.Td>
-              <Table.Td>19</Table.Td>
-              <Table.Td>
+              </TableTd>
+            </TableTr>
+            <TableTr>
+              <TableTd>Northline Studio</TableTd>
+              <TableTd>Business</TableTd>
+              <TableTd>19</TableTd>
+              <TableTd>
                 <Badge color="blue">Scaling</Badge>
-              </Table.Td>
-            </Table.Tr>
-          </Table.Tbody>
+              </TableTd>
+            </TableTr>
+          </TableTbody>
         </Table>
         <Text c="dimmed" size="sm" mt="md">
           Tenant switcher in header is wired to this entity list.

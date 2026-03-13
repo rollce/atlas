@@ -4,6 +4,7 @@ import {
   Card,
   Group,
   List,
+  ListItem,
   SimpleGrid,
   Text,
 } from "@mantine/core";
@@ -24,9 +25,9 @@ export default function BillingPage() {
             <Badge color="teal">Pro</Badge>
           </Group>
           <List spacing="xs" mb="md">
-            <List.Item>Members: 7 / 15</List.Item>
-            <List.Item>Projects: 21 / unlimited</List.Item>
-            <List.Item>Storage: 1.6GB / 10GB</List.Item>
+            <ListItem>Members: 7 / 15</ListItem>
+            <ListItem>Projects: 21 / unlimited</ListItem>
+            <ListItem>Storage: 1.6GB / 10GB</ListItem>
           </List>
           <Button color="teal">Upgrade to Business</Button>
         </Card>

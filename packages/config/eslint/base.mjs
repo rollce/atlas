@@ -8,6 +8,7 @@ export default [
     ignores: [
       "**/dist/**",
       "**/.next/**",
+      "**/next-env.d.ts",
       "**/coverage/**",
       "**/node_modules/**",
     ],

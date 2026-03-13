@@ -3,6 +3,10 @@
 import {
   ActionIcon,
   AppShell,
+  AppShellHeader,
+  AppShellMain,
+  AppShellNavbar,
+  AppShellSection,
   Badge,
   Box,
   Burger,
@@ -58,7 +62,7 @@ export function AtlasShell({ children }: { children: ReactNode }) {
       navbar={{ width: 280, breakpoint: "md", collapsed: { mobile: !opened } }}
       padding="lg"
     >
-      <AppShell.Header>
+      <AppShellHeader>
         <Group h="100%" px="md" justify="space-between">
           <Group gap="sm">
             <Burger
@@ -87,10 +91,10 @@ export function AtlasShell({ children }: { children: ReactNode }) {
             </ActionIcon>
           </Group>
         </Group>
-      </AppShell.Header>
+      </AppShellHeader>
 
-      <AppShell.Navbar p="md">
-        <AppShell.Section>
+      <AppShellNavbar p="md">
+        <AppShellSection>
           <Text fw={700} size="sm" mb="sm" c="dimmed">
             Navigation
           </Text>
@@ -112,11 +116,11 @@ export function AtlasShell({ children }: { children: ReactNode }) {
               />
             ))}
           </Stack>
-        </AppShell.Section>
+        </AppShellSection>
 
         <Divider my="md" />
 
-        <AppShell.Section component={ScrollArea} grow>
+        <AppShellSection component={ScrollArea} grow>
           <Box
             p="sm"
             bd="1px solid var(--mantine-color-dark-4)"
@@ -129,9 +133,9 @@ export function AtlasShell({ children }: { children: ReactNode }) {
               Pro plan, 7/15 seats used, 21 active projects.
             </Text>
           </Box>
-        </AppShell.Section>
+        </AppShellSection>
 
-        <AppShell.Section>
+        <AppShellSection>
           <Button
             fullWidth
             variant="light"
@@ -144,10 +148,10 @@ export function AtlasShell({ children }: { children: ReactNode }) {
           >
             Logout
           </Button>
-        </AppShell.Section>
-      </AppShell.Navbar>
+        </AppShellSection>
+      </AppShellNavbar>
 
-      <AppShell.Main className="atlas-appear">{children}</AppShell.Main>
+      <AppShellMain className="atlas-appear">{children}</AppShellMain>
     </AppShell>
   );
 }
