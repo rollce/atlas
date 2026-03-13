@@ -38,6 +38,12 @@ Multi-tenant SaaS platform for teams to manage organizations, workspaces, projec
 - `scripts/start-web.sh` - starts Next.js production server
 - `scripts/start-worker.sh` - starts BullMQ worker
 
+## Worker reliability
+
+- Retries: exponential backoff (`WORKER_RETRY_ATTEMPTS`, `WORKER_RETRY_DELAY_MS`)
+- Dead-letter queue: failed jobs after final retry are moved to `dead-letter`
+- Idempotency: jobs with `idempotencyKey` are deduplicated via Redis key (`IDEMPOTENCY_TTL_SECONDS`)
+
 ## Tenancy & RBAC API (MVP)
 
 - `GET /api/v1/organizations` - list organizations where current user has membership

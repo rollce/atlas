@@ -9,6 +9,7 @@ describe("queue names", () => {
       audit: "audit",
       reports: "reports",
       cleanup: "cleanup",
+      deadLetter: "dead-letter",
     });
   });
 });

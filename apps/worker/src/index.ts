@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { Queue, Worker } from "bullmq";
+import { Queue, type Job, Worker } from "bullmq";
 import { env } from "./config/env.js";
 import { processJob } from "./jobs/processors.js";
 import { logger } from "./lib/logger.js";
@@ -15,14 +15,105 @@ const connection = {
 
 const queues: Queue[] = [];
 const workers: Worker[] = [];
+const deadLetterQueue = new Queue(queueNames.deadLetter, {
+  connection,
+  defaultJobOptions: {
+    removeOnComplete: 1000,
+    removeOnFail: false,
+  },
+});
 
-for (const queueName of Object.values(queueNames)) {
-  const queue = new Queue(queueName, { connection });
+async function toDeadLetterQueue(
+  queueName: string,
+  job: Job | undefined,
+  error: Error,
+): Promise<void> {
+  if (!job) {
+    return;
+  }
+
+  await deadLetterQueue.add(
+    "dead-letter",
+    {
+      sourceQueue: queueName,
+      sourceJobId: job.id,
+      attemptsMade: job.attemptsMade,
+      payload: job.data,
+      failedReason: error.message,
+      movedAt: new Date().toISOString(),
+    },
+    {
+      removeOnComplete: 1000,
+      removeOnFail: false,
+      // Keep one dead-letter record per source job id.
+      jobId: `${queueName}:${job.id ?? "unknown"}`,
+    },
+  );
+}
+
+async function ensureIdempotency(
+  queue: Queue,
+  queueName: string,
+  job: Job,
+): Promise<boolean> {
+  const data = job.data as { idempotencyKey?: unknown } | null;
+  const idempotencyKey =
+    data && typeof data.idempotencyKey === "string"
+      ? data.idempotencyKey.trim()
+      : "";
+
+  if (!idempotencyKey) {
+    return true;
+  }
+
+  const redisClient = await queue.client;
+  const key = `atlas:worker:idem:${queueName}:${idempotencyKey}`;
+  const inserted = await redisClient.set(
+    key,
+    String(job.id ?? "no-job-id"),
+    "EX",
+    env.IDEMPOTENCY_TTL_SECONDS,
+    "NX",
+  );
+
+  if (inserted === "OK") {
+    return true;
+  }
+
+  logger.warn(
+    { queueName, jobId: job.id, idempotencyKey },
+    "Duplicate job detected by idempotency key; skipping",
+  );
+  return false;
+}
+
+const queueEntries = Object.entries(queueNames).filter(
+  ([key]) => key !== "deadLetter",
+);
+
+for (const [, queueName] of queueEntries) {
+  const queue = new Queue(queueName, {
+    connection,
+    defaultJobOptions: {
+      attempts: env.WORKER_RETRY_ATTEMPTS,
+      backoff: {
+        type: "exponential",
+        delay: env.WORKER_RETRY_DELAY_MS,
+      },
+      removeOnComplete: 1000,
+      removeOnFail: false,
+    },
+  });
   queues.push(queue);
 
   const worker = new Worker(
     queueName,
-    async (job) => {
+    async (job: Job) => {
+      const canProcess = await ensureIdempotency(queue, queueName, job);
+      if (!canProcess) {
+        return;
+      }
+
       await processJob(queueName, job.data);
     },
     {
@@ -37,19 +128,40 @@ for (const queueName of Object.values(queueNames)) {
 
   worker.on("failed", (job, error) => {
     logger.error({ queueName, jobId: job?.id, error }, "Job failed");
+
+    const maxAttempts = job?.opts.attempts ?? 1;
+    if (job && job.attemptsMade >= maxAttempts) {
+      void toDeadLetterQueue(queueName, job, error);
+    }
   });
 
   workers.push(worker);
 
+  const bootstrapIdempotencyKey = `bootstrap-${queueName}`;
   void queue.add(
     "bootstrap",
-    { createdAt: new Date().toISOString() },
-    { removeOnComplete: true },
+    {
+      createdAt: new Date().toISOString(),
+      idempotencyKey: bootstrapIdempotencyKey,
+    },
+    {
+      removeOnComplete: true,
+      attempts: env.WORKER_RETRY_ATTEMPTS,
+      backoff: {
+        type: "exponential",
+        delay: env.WORKER_RETRY_DELAY_MS,
+      },
+    },
   );
 }
 
 logger.info(
-  { queues: Object.values(queueNames), concurrency: env.WORKER_CONCURRENCY },
+  {
+    queues: queueEntries.map(([, queueName]) => queueName),
+    concurrency: env.WORKER_CONCURRENCY,
+    retries: env.WORKER_RETRY_ATTEMPTS,
+    retryDelayMs: env.WORKER_RETRY_DELAY_MS,
+  },
   "Atlas worker started",
 );
 
@@ -82,6 +194,7 @@ async function shutdown() {
   });
   await Promise.all(workers.map((worker) => worker.close()));
   await Promise.all(queues.map((queue) => queue.close()));
+  await deadLetterQueue.close();
   process.exit(0);
 }
 

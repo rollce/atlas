@@ -141,10 +141,10 @@ Goal: production-style B2B SaaS to demonstrate multi-tenant architecture, RBAC, 
   - [x] Audit/event processing
   - [x] Report generation
   - [x] Cleanup tasks
-- [ ] Add retries policy
-- [ ] Add simplified dead-letter queue handling
+- [x] Add retries policy
+- [x] Add simplified dead-letter queue handling
 - [x] Add job status logging
-- [ ] Add idempotency key for sensitive async operations
+- [x] Add idempotency key for sensitive async operations
 
 ## 9) Frontend (web)
 
