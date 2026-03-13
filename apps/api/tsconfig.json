@@ -1,0 +1,10 @@
+{
+  "extends": "@atlas/config/tsconfig/node",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    }
+  },
+  "include": ["src", "prisma"]
+}

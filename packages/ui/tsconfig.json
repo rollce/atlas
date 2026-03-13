@@ -1,0 +1,7 @@
+{
+  "extends": "@atlas/config/tsconfig/react",
+  "compilerOptions": {
+    "baseUrl": "."
+  },
+  "include": ["src"]
+}
