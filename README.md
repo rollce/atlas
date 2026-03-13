@@ -38,6 +38,18 @@ Multi-tenant SaaS platform for teams to manage organizations, workspaces, projec
 - `scripts/start-web.sh` - starts Next.js production server
 - `scripts/start-worker.sh` - starts BullMQ worker
 
+## Tenancy & RBAC API (MVP)
+
+- `GET /api/v1/organizations` - list organizations where current user has membership
+- `POST /api/v1/organizations` - create organization and assign current user as `OWNER`
+- `GET /api/v1/tenant/context` - resolve current tenant context
+- `GET /api/v1/tenant/members` - list organization members
+- `GET /api/v1/tenant/invitations` - list active invitations for organization
+- `POST /api/v1/tenant/invitations` - invite member by email (`OWNER` / `ADMIN`)
+- `POST /api/v1/tenant/invitations/accept` - accept invite token and join organization
+
+Use `x-organization-id` header for tenant-scoped endpoints when a user belongs to multiple organizations.
+
 ## Quality gates
 
 - Lint: `pnpm lint`

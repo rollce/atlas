@@ -64,8 +64,8 @@ const healthServer = createServer((request, response) => {
   response.end(JSON.stringify({ status: "not_found" }));
 });
 
-healthServer.listen(env.PORT, () => {
-  logger.info({ port: env.PORT }, "Worker health server started");
+healthServer.listen(env.HEALTH_PORT, () => {
+  logger.info({ port: env.HEALTH_PORT }, "Worker health server started");
 });
 
 async function shutdown() {

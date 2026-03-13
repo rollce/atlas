@@ -88,14 +88,14 @@ Goal: production-style B2B SaaS to demonstrate multi-tenant architecture, RBAC, 
 
 ## 5) Tenancy & RBAC
 
-- [ ] Implement tenant resolver middleware
+- [x] Implement tenant resolver middleware
 - [ ] Enforce tenant isolation in all tenant-bound queries
 - [x] Implement membership model
-- [ ] Invite by email flow
-- [ ] Join organization flow
-- [ ] Organization/workspace switcher support
-- [ ] Define permissions matrix per role
-- [ ] Implement RBAC guards in API
+- [x] Invite by email flow
+- [x] Join organization flow
+- [x] Organization/workspace switcher support
+- [x] Define permissions matrix per role
+- [x] Implement RBAC guards in API
 - [ ] Add policy layer for resource-level checks
 - [ ] Mirror permission checks in UI
 
@@ -258,10 +258,10 @@ Goal: production-style B2B SaaS to demonstrate multi-tenant architecture, RBAC, 
 
 - [ ] Add DNS record for `atlas.rollsev.work` -> frontend service target
 - [ ] Add DNS record for `api.atlas.rollsev.work` -> API service target
-- [ ] Add custom domains in Railway (`atlas` + `api.atlas`)
+- [x] Add custom domains in Railway (`atlas` + `api.atlas`)
 - [ ] Wait for SSL certificate issuance
-- [ ] Set `NEXT_PUBLIC_APP_URL=https://atlas.rollsev.work`
-- [ ] Set `API_BASE_URL=https://api.atlas.rollsev.work/api/v1`
+- [x] Set `NEXT_PUBLIC_APP_URL=https://atlas.rollsev.work`
+- [x] Set `API_BASE_URL=https://api.atlas.rollsev.work/api/v1`
 - [ ] Verify cookie/auth domain settings
 - [ ] Verify OAuth/redirect/callback URLs (if enabled)
 - [ ] Run domain smoke test checklist

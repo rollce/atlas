@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { env } from "./config/env.js";
 import { registerSecurityPlugins } from "./plugins/security.js";
 import { authRoutes } from "./modules/auth/routes.js";
+import { tenancyRoutes } from "./modules/tenancy/routes.js";
 import { healthRoutes } from "./routes/health.js";
 import { v1Routes } from "./routes/v1.js";
 
@@ -45,6 +46,7 @@ async function bootstrap() {
   await healthRoutes(app);
   await v1Routes(app);
   await authRoutes(app);
+  await tenancyRoutes(app);
 
   await app.listen({
     port: env.PORT,

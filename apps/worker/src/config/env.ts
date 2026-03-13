@@ -5,7 +5,8 @@ const envSchema = z.object({
   NODE_ENV: z
     .enum(["development", "test", "production"])
     .default("development"),
-  PORT: z.coerce.number().int().positive().default(3000),
+  PORT: z.coerce.number().int().positive().optional(),
+  WORKER_PORT: z.coerce.number().int().positive().default(4040),
   REDIS_URL: z.string().url(),
   WORKER_CONCURRENCY: z.coerce.number().int().positive().default(10),
 });
@@ -19,4 +20,7 @@ if (!parsed.success) {
   process.exit(1);
 }
 
-export const env = parsed.data;
+export const env = {
+  ...parsed.data,
+  HEALTH_PORT: parsed.data.PORT ?? parsed.data.WORKER_PORT,
+};
