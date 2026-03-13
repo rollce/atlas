@@ -121,9 +121,9 @@ Goal: production-style B2B SaaS to demonstrate multi-tenant architecture, RBAC, 
 
 - [x] Define plans model (Free / Pro / Business)
 - [x] Define subscriptions model
-- [ ] Implement feature gates
-- [ ] Implement usage limits (projects, members, storage)
-- [ ] Add middleware for limit checks
+- [x] Implement feature gates
+- [x] Implement usage limits (projects, members, storage)
+- [x] Add middleware for limit checks
 - [x] Add trial period logic
 - [x] Build billing page (plan + usage + invoices)
 - [ ] Build upgrade/downgrade flow

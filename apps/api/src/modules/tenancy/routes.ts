@@ -3,6 +3,7 @@ import crypto from "node:crypto";
 import type { FastifyInstance, FastifyReply } from "fastify";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
+import { enforceUsageLimit, requireFeature } from "../billing/middleware.js";
 import { requireAuth } from "../auth/middleware.js";
 import {
   acceptInvitationSchema,
@@ -211,6 +212,8 @@ export async function tenancyRoutes(app: FastifyInstance): Promise<void> {
         requireAuth,
         requireTenant,
         requireTenantRole([Role.OWNER, Role.ADMIN]),
+        requireFeature("advanced_permissions"),
+        enforceUsageLimit("members"),
       ],
     },
     async (request, reply) => {

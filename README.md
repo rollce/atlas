@@ -47,6 +47,8 @@ Multi-tenant SaaS platform for teams to manage organizations, workspaces, projec
 - `GET /api/v1/tenant/invitations` - list active invitations for organization
 - `POST /api/v1/tenant/invitations` - invite member by email (`OWNER` / `ADMIN`)
 - `POST /api/v1/tenant/invitations/accept` - accept invite token and join organization
+- `GET /api/v1/tenant/billing/usage` - plan limits + current usage snapshot
+- `GET /api/v1/tenant/billing/invoices` - mock invoice history feed for billing page
 
 Use `x-organization-id` header for tenant-scoped endpoints when a user belongs to multiple organizations.
 
