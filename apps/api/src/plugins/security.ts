@@ -15,7 +15,14 @@ export async function registerSecurityPlugins(
   });
 
   await app.register(cors, {
-    origin: allowedOrigins.length === 1 ? allowedOrigins[0] : allowedOrigins,
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+        return;
+      }
+
+      callback(new Error("Origin is not allowed"), false);
+    },
     credentials: true,
   });
 }

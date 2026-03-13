@@ -125,7 +125,7 @@ Goal: production-style B2B SaaS to demonstrate multi-tenant architecture, RBAC, 
 - [ ] Implement usage limits (projects, members, storage)
 - [ ] Add middleware for limit checks
 - [x] Add trial period logic
-- [ ] Build billing page (plan + usage + invoices)
+- [x] Build billing page (plan + usage + invoices)
 - [ ] Build upgrade/downgrade flow
 - [ ] Add mock checkout (MVP) with Stripe-ready abstraction
 - [ ] Add webhook endpoint for billing events
@@ -240,18 +240,18 @@ Goal: production-style B2B SaaS to demonstrate multi-tenant architecture, RBAC, 
 
 ## 14) Railway deployment
 
-- [ ] Create Railway project: `atlas`
-- [ ] Create services: `web`, `api`, `worker`
-- [ ] Add PostgreSQL service
-- [ ] Add Redis service
-- [ ] Configure env variables per service
-- [ ] Configure build/start commands
-- [ ] Configure healthchecks
-- [ ] Run prod migrations
+- [x] Create Railway project: `atlas`
+- [x] Create services: `web`, `api`, `worker`
+- [x] Add PostgreSQL service
+- [x] Add Redis service
+- [x] Configure env variables per service
+- [x] Configure build/start commands
+- [x] Configure healthchecks
+- [x] Run prod migrations
 - [ ] Load seed/demo data
-- [ ] Verify service-to-service networking
-- [ ] Verify production logs
-- [ ] Verify CORS on production URLs
+- [x] Verify service-to-service networking
+- [x] Verify production logs
+- [x] Verify CORS on production URLs
 - [ ] Verify file upload/storage on production
 
 ## 15) Domain setup (`atlas.rollsev.work`)
