@@ -89,7 +89,7 @@ Goal: production-style B2B SaaS to demonstrate multi-tenant architecture, RBAC, 
 ## 5) Tenancy & RBAC
 
 - [x] Implement tenant resolver middleware
-- [ ] Enforce tenant isolation in all tenant-bound queries
+- [x] Enforce tenant isolation in all tenant-bound queries
 - [x] Implement membership model
 - [x] Invite by email flow
 - [x] Join organization flow
@@ -102,20 +102,20 @@ Goal: production-style B2B SaaS to demonstrate multi-tenant architecture, RBAC, 
 ## 6) Core domain features
 
 - [ ] CRUD organizations
-- [ ] CRUD workspaces
-- [ ] CRUD projects
-- [ ] CRUD tasks
-- [ ] CRUD clients
-- [ ] Task statuses and workflow
-- [ ] Filters, sorting, full-text/basic search
+- [x] CRUD workspaces
+- [x] CRUD projects
+- [x] CRUD tasks
+- [x] CRUD clients
+- [x] Task statuses and workflow
+- [x] Filters, sorting, full-text/basic search
 - [ ] Assignees and due dates
-- [ ] Activity history timeline
+- [x] Activity history timeline
 - [ ] Comments on tasks/projects
 - [ ] File attachments
-- [ ] Audit log on critical actions
+- [x] Audit log on critical actions
 - [ ] Soft delete where needed
 - [ ] Pagination on all list endpoints
-- [ ] Optimistic concurrency (version field) on critical entities
+- [x] Optimistic concurrency (version field) on critical entities
 
 ## 7) Billing & subscription architecture
 
@@ -198,7 +198,7 @@ Goal: production-style B2B SaaS to demonstrate multi-tenant architecture, RBAC, 
 - [ ] MIME type validation
 - [ ] Audit auth-related events
 - [ ] Protect admin-only endpoints
-- [ ] Add checks to prevent tenant data leakage
+- [x] Add checks to prevent tenant data leakage
 
 ## 11) Tests
 

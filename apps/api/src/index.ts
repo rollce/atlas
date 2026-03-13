@@ -4,6 +4,7 @@ import { env } from "./config/env.js";
 import { registerSecurityPlugins } from "./plugins/security.js";
 import { authRoutes } from "./modules/auth/routes.js";
 import { billingRoutes } from "./modules/billing/routes.js";
+import { coreRoutes } from "./modules/core/routes.js";
 import { tenancyRoutes } from "./modules/tenancy/routes.js";
 import { healthRoutes } from "./routes/health.js";
 import { v1Routes } from "./routes/v1.js";
@@ -49,6 +50,7 @@ async function bootstrap() {
   await authRoutes(app);
   await tenancyRoutes(app);
   await billingRoutes(app);
+  await coreRoutes(app);
 
   await app.listen({
     port: env.PORT,

@@ -1,7 +1,20 @@
+import { PlanCode } from "@prisma/client";
 import type { FastifyInstance } from "fastify";
 import { requireAuth } from "../auth/middleware.js";
 import { requireTenant } from "../tenancy/middleware.js";
 import { getBillingSnapshot } from "./middleware.js";
+
+function invoiceAmount(plan: PlanCode): number {
+  if (plan === PlanCode.FREE) {
+    return 0;
+  }
+
+  if (plan === PlanCode.PRO) {
+    return 39;
+  }
+
+  return 129;
+}
 
 export async function billingRoutes(app: FastifyInstance): Promise<void> {
   app.get(
@@ -47,12 +60,7 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
             id: "mock-2026-03",
             period: "2026-03",
             plan: snapshot.planCode,
-            amount:
-              snapshot.planCode === "FREE"
-                ? 0
-                : snapshot.planCode === "PRO"
-                  ? 39
-                  : 129,
+            amount: invoiceAmount(snapshot.planCode),
             currency: "USD",
             status: "paid",
           },
@@ -60,12 +68,7 @@ export async function billingRoutes(app: FastifyInstance): Promise<void> {
             id: "mock-2026-02",
             period: "2026-02",
             plan: snapshot.planCode,
-            amount:
-              snapshot.planCode === "FREE"
-                ? 0
-                : snapshot.planCode === "PRO"
-                  ? 39
-                  : 129,
+            amount: invoiceAmount(snapshot.planCode),
             currency: "USD",
             status: "paid",
           },

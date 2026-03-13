@@ -49,6 +49,11 @@ Multi-tenant SaaS platform for teams to manage organizations, workspaces, projec
 - `POST /api/v1/tenant/invitations/accept` - accept invite token and join organization
 - `GET /api/v1/tenant/billing/usage` - plan limits + current usage snapshot
 - `GET /api/v1/tenant/billing/invoices` - mock invoice history feed for billing page
+- `GET/POST/PATCH/DELETE /api/v1/tenant/workspaces`
+- `GET/POST/PATCH/DELETE /api/v1/tenant/clients`
+- `GET/POST/PATCH/DELETE /api/v1/tenant/projects`
+- `GET/POST/PATCH/DELETE /api/v1/tenant/tasks` (`PATCH` supports `expectedVersion` for optimistic concurrency)
+- `GET /api/v1/tenant/audit-logs` (plan-gated)
 
 Use `x-organization-id` header for tenant-scoped endpoints when a user belongs to multiple organizations.
 
