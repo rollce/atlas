@@ -1,3 +1,4 @@
+import { createServer } from "node:http";
 import { Queue, Worker } from "bullmq";
 import { env } from "./config/env.js";
 import { processJob } from "./jobs/processors.js";
@@ -52,8 +53,33 @@ logger.info(
   "Atlas worker started",
 );
 
+const healthServer = createServer((request, response) => {
+  if (request.url === "/health" || request.url === "/ready") {
+    response.writeHead(200, { "content-type": "application/json" });
+    response.end(JSON.stringify({ status: "ok", service: "worker" }));
+    return;
+  }
+
+  response.writeHead(404, { "content-type": "application/json" });
+  response.end(JSON.stringify({ status: "not_found" }));
+});
+
+healthServer.listen(env.PORT, () => {
+  logger.info({ port: env.PORT }, "Worker health server started");
+});
+
 async function shutdown() {
   logger.info("Shutting down worker...");
+  await new Promise<void>((resolve, reject) => {
+    healthServer.close((error) => {
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve();
+    });
+  });
   await Promise.all(workers.map((worker) => worker.close()));
   await Promise.all(queues.map((queue) => queue.close()));
   process.exit(0);
