@@ -5,6 +5,7 @@ import { Notifications } from "@mantine/notifications";
 import "@mantine/core/styles.css";
 import "@mantine/notifications/styles.css";
 import "./globals.css";
+import { AuthProvider } from "@/lib/auth-store";
 
 const spaceGrotesk = Space_Grotesk({ subsets: ["latin"] });
 
@@ -34,8 +35,10 @@ export default function RootLayout({
       </head>
       <body className={spaceGrotesk.className}>
         <MantineProvider defaultColorScheme="dark" theme={theme}>
-          <Notifications position="top-right" zIndex={1000} />
-          {children}
+          <AuthProvider>
+            <Notifications position="top-right" zIndex={1000} />
+            {children}
+          </AuthProvider>
         </MantineProvider>
       </body>
     </html>

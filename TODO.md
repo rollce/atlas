@@ -96,12 +96,12 @@ Goal: production-style B2B SaaS to demonstrate multi-tenant architecture, RBAC, 
 - [x] Organization/workspace switcher support
 - [x] Define permissions matrix per role
 - [x] Implement RBAC guards in API
-- [ ] Add policy layer for resource-level checks
-- [ ] Mirror permission checks in UI
+- [x] Add policy layer for resource-level checks
+- [x] Mirror permission checks in UI
 
 ## 6) Core domain features
 
-- [ ] CRUD organizations
+- [x] CRUD organizations
 - [x] CRUD workspaces
 - [x] CRUD projects
 - [x] CRUD tasks
@@ -175,14 +175,14 @@ Goal: production-style B2B SaaS to demonstrate multi-tenant architecture, RBAC, 
 
 - [x] App layout shell (sidebar/topbar/content)
 - [x] Protected routes
-- [ ] Auth store/session bootstrap
+- [x] Auth store/session bootstrap
 - [x] Tenant switcher UX
-- [ ] Tables with filtering/sorting/pagination state
+- [x] Tables with filtering/sorting/pagination state
 - [x] Forms with schema validation
 - [x] Toast notifications
-- [ ] Skeleton loaders
-- [ ] Empty states
-- [ ] Error states
+- [x] Skeleton loaders
+- [x] Empty states
+- [x] Error states
 - [ ] Optimistic updates where useful
 
 ## 10) Security baseline

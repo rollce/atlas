@@ -1,11 +1,11 @@
-import { Prisma, Role } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import type { FastifyInstance, FastifyReply } from "fastify";
 import { z } from "zod";
 import { prisma } from "../../lib/prisma.js";
 import { enforceUsageLimit, requireFeature } from "../billing/middleware.js";
 import { requireAuth } from "../auth/middleware.js";
 import { requireTenant } from "../tenancy/middleware.js";
-import { requireTenantRole } from "../tenancy/rbac.js";
+import { requirePolicy } from "../tenancy/policy.js";
 
 const paginationSchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
@@ -263,7 +263,7 @@ export async function coreRoutes(app: FastifyInstance): Promise<void> {
       preHandler: [
         requireAuth,
         requireTenant,
-        requireTenantRole([Role.OWNER, Role.ADMIN, Role.MANAGER]),
+        requirePolicy("workspace:write"),
       ],
     },
     async (request, reply) => {
@@ -321,7 +321,7 @@ export async function coreRoutes(app: FastifyInstance): Promise<void> {
       preHandler: [
         requireAuth,
         requireTenant,
-        requireTenantRole([Role.OWNER, Role.ADMIN, Role.MANAGER]),
+        requirePolicy("workspace:write"),
       ],
     },
     async (request, reply) => {
@@ -402,7 +402,7 @@ export async function coreRoutes(app: FastifyInstance): Promise<void> {
       preHandler: [
         requireAuth,
         requireTenant,
-        requireTenantRole([Role.OWNER, Role.ADMIN]),
+        requirePolicy("workspace:delete"),
       ],
     },
     async (request, reply) => {
@@ -507,11 +507,7 @@ export async function coreRoutes(app: FastifyInstance): Promise<void> {
   app.post(
     "/api/v1/tenant/clients",
     {
-      preHandler: [
-        requireAuth,
-        requireTenant,
-        requireTenantRole([Role.OWNER, Role.ADMIN, Role.MANAGER]),
-      ],
+      preHandler: [requireAuth, requireTenant, requirePolicy("client:write")],
     },
     async (request, reply) => {
       if (!request.auth || !request.tenant) {
@@ -551,11 +547,7 @@ export async function coreRoutes(app: FastifyInstance): Promise<void> {
   app.patch(
     "/api/v1/tenant/clients/:id",
     {
-      preHandler: [
-        requireAuth,
-        requireTenant,
-        requireTenantRole([Role.OWNER, Role.ADMIN, Role.MANAGER]),
-      ],
+      preHandler: [requireAuth, requireTenant, requirePolicy("client:write")],
     },
     async (request, reply) => {
       if (!request.auth || !request.tenant) {
@@ -622,11 +614,7 @@ export async function coreRoutes(app: FastifyInstance): Promise<void> {
   app.delete(
     "/api/v1/tenant/clients/:id",
     {
-      preHandler: [
-        requireAuth,
-        requireTenant,
-        requireTenantRole([Role.OWNER, Role.ADMIN]),
-      ],
+      preHandler: [requireAuth, requireTenant, requirePolicy("client:delete")],
     },
     async (request, reply) => {
       if (!request.auth || !request.tenant) {
@@ -752,7 +740,7 @@ export async function coreRoutes(app: FastifyInstance): Promise<void> {
       preHandler: [
         requireAuth,
         requireTenant,
-        requireTenantRole([Role.OWNER, Role.ADMIN, Role.MANAGER]),
+        requirePolicy("project:write"),
         enforceUsageLimit("projects"),
       ],
     },
@@ -871,11 +859,7 @@ export async function coreRoutes(app: FastifyInstance): Promise<void> {
   app.patch(
     "/api/v1/tenant/projects/:id",
     {
-      preHandler: [
-        requireAuth,
-        requireTenant,
-        requireTenantRole([Role.OWNER, Role.ADMIN, Role.MANAGER]),
-      ],
+      preHandler: [requireAuth, requireTenant, requirePolicy("project:write")],
     },
     async (request, reply) => {
       if (!request.auth || !request.tenant) {
@@ -970,11 +954,7 @@ export async function coreRoutes(app: FastifyInstance): Promise<void> {
   app.delete(
     "/api/v1/tenant/projects/:id",
     {
-      preHandler: [
-        requireAuth,
-        requireTenant,
-        requireTenantRole([Role.OWNER, Role.ADMIN]),
-      ],
+      preHandler: [requireAuth, requireTenant, requirePolicy("project:delete")],
     },
     async (request, reply) => {
       if (!request.auth || !request.tenant) {
@@ -1100,11 +1080,7 @@ export async function coreRoutes(app: FastifyInstance): Promise<void> {
   app.post(
     "/api/v1/tenant/tasks",
     {
-      preHandler: [
-        requireAuth,
-        requireTenant,
-        requireTenantRole([Role.OWNER, Role.ADMIN, Role.MANAGER]),
-      ],
+      preHandler: [requireAuth, requireTenant, requirePolicy("task:write")],
     },
     async (request, reply) => {
       if (!request.auth || !request.tenant) {
@@ -1159,11 +1135,7 @@ export async function coreRoutes(app: FastifyInstance): Promise<void> {
   app.patch(
     "/api/v1/tenant/tasks/:id",
     {
-      preHandler: [
-        requireAuth,
-        requireTenant,
-        requireTenantRole([Role.OWNER, Role.ADMIN, Role.MANAGER]),
-      ],
+      preHandler: [requireAuth, requireTenant, requirePolicy("task:write")],
     },
     async (request, reply) => {
       if (!request.auth || !request.tenant) {
@@ -1266,11 +1238,7 @@ export async function coreRoutes(app: FastifyInstance): Promise<void> {
   app.delete(
     "/api/v1/tenant/tasks/:id",
     {
-      preHandler: [
-        requireAuth,
-        requireTenant,
-        requireTenantRole([Role.OWNER, Role.ADMIN, Role.MANAGER]),
-      ],
+      preHandler: [requireAuth, requireTenant, requirePolicy("task:delete")],
     },
     async (request, reply) => {
       if (!request.auth || !request.tenant) {

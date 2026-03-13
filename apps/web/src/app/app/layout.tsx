@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import { AtlasShell } from "@/components/atlas-shell";
+import { ProtectedApp } from "@/components/protected-app";
 
 export default function ProtectedLayout({ children }: { children: ReactNode }) {
-  return <AtlasShell>{children}</AtlasShell>;
+  return <ProtectedApp>{children}</ProtectedApp>;
 }

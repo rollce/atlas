@@ -1,24 +1,44 @@
 export const API_BASE =
   process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1";
 
-type RequestOptions = {
+export type RequestOptions = {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
   token?: string;
+  organizationId?: string;
+  signal?: AbortSignal;
+  headers?: Record<string, string>;
 };
+
+export class ApiError extends Error {
+  status: number;
+  code?: string;
+
+  constructor(params: { status: number; message: string; code?: string }) {
+    super(params.message);
+    this.status = params.status;
+    this.code = params.code;
+  }
+}
 
 export async function apiRequest<T>(
   path: string,
   options: RequestOptions = {},
 ): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  const response = await fetch(`${API_BASE}${normalizedPath}`, {
     method: options.method ?? "GET",
     headers: {
       "Content-Type": "application/json",
       ...(options.token ? { Authorization: `Bearer ${options.token}` } : {}),
+      ...(options.organizationId
+        ? { "x-organization-id": options.organizationId }
+        : {}),
+      ...options.headers,
     },
     body: options.body ? JSON.stringify(options.body) : undefined,
     cache: "no-store",
+    signal: options.signal,
   });
 
   const payload = (await response.json().catch(() => null)) as T & {
@@ -29,7 +49,11 @@ export async function apiRequest<T>(
   if (!response.ok) {
     const message =
       payload?.message ?? `Request failed with status ${response.status}`;
-    throw new Error(message);
+    throw new ApiError({
+      status: response.status,
+      code: payload?.code,
+      message,
+    });
   }
 
   return payload;

@@ -11,7 +11,23 @@ import {
   createOrganizationSchema,
 } from "./schemas.js";
 import { requireTenant } from "./middleware.js";
-import { requireTenantRole } from "./rbac.js";
+import { requirePolicy } from "./policy.js";
+
+const organizationParamsSchema = z.object({
+  id: z.string().cuid(),
+});
+
+const updateOrganizationSchema = z
+  .object({
+    name: z.string().trim().min(2).max(160).optional(),
+    billingEmail: z.string().trim().email().nullable().optional(),
+  })
+  .refine(
+    (value) => value.name !== undefined || value.billingEmail !== undefined,
+    {
+      message: "At least one field must be provided",
+    },
+  );
 
 function makeSlug(base: string): string {
   const clean = base
@@ -33,6 +49,23 @@ function parseBody<TSchema extends z.ZodTypeAny>(
     reply.status(400).send({
       code: "VALIDATION_ERROR",
       message: "Invalid request payload",
+    });
+    return null;
+  }
+
+  return parsed.data;
+}
+
+function parseParams<TSchema extends z.ZodTypeAny>(
+  schema: TSchema,
+  params: unknown,
+  reply: FastifyReply,
+): z.infer<TSchema> | null {
+  const parsed = schema.safeParse(params);
+  if (!parsed.success) {
+    reply.status(400).send({
+      code: "VALIDATION_ERROR",
+      message: "Invalid route params",
     });
     return null;
   }
@@ -114,6 +147,137 @@ export async function tenancyRoutes(app: FastifyInstance): Promise<void> {
           slug: organization.slug,
         },
       });
+    },
+  );
+
+  app.patch(
+    "/api/v1/organizations/:id",
+    {
+      preHandler: [
+        requireAuth,
+        requireTenant,
+        requirePolicy("organization:update"),
+      ],
+    },
+    async (request, reply) => {
+      if (!request.auth || !request.tenant) {
+        reply.status(401).send({
+          code: "TENANT_CONTEXT_MISSING",
+          message: "Tenant context is required",
+        });
+        return;
+      }
+
+      const params = parseParams(
+        organizationParamsSchema,
+        request.params,
+        reply,
+      );
+      if (!params) {
+        return;
+      }
+
+      if (params.id !== request.tenant.organizationId) {
+        reply.status(404).send({
+          code: "ORGANIZATION_NOT_FOUND",
+          message: "Organization not found in tenant scope",
+        });
+        return;
+      }
+
+      const body = parseBody(updateOrganizationSchema, request.body, reply);
+      if (!body) {
+        return;
+      }
+
+      const organization = await prisma.organization.update({
+        where: { id: request.tenant.organizationId },
+        data: {
+          name: body.name,
+          billingEmail:
+            body.billingEmail === undefined ? undefined : body.billingEmail,
+        },
+      });
+
+      await prisma.auditLog.create({
+        data: {
+          organizationId: request.tenant.organizationId,
+          actorId: request.auth.userId,
+          action: "organization.updated",
+          entityType: "organization",
+          entityId: organization.id,
+          metadata: {
+            name: body.name,
+            billingEmail:
+              body.billingEmail === undefined ? "unchanged" : body.billingEmail,
+          },
+        },
+      });
+
+      reply.send({
+        organization: {
+          id: organization.id,
+          name: organization.name,
+          slug: organization.slug,
+          billingEmail: organization.billingEmail,
+        },
+      });
+    },
+  );
+
+  app.delete(
+    "/api/v1/organizations/:id",
+    {
+      preHandler: [
+        requireAuth,
+        requireTenant,
+        requirePolicy("organization:delete"),
+      ],
+    },
+    async (request, reply) => {
+      if (!request.auth || !request.tenant) {
+        reply.status(401).send({
+          code: "TENANT_CONTEXT_MISSING",
+          message: "Tenant context is required",
+        });
+        return;
+      }
+
+      const params = parseParams(
+        organizationParamsSchema,
+        request.params,
+        reply,
+      );
+      if (!params) {
+        return;
+      }
+
+      if (params.id !== request.tenant.organizationId) {
+        reply.status(404).send({
+          code: "ORGANIZATION_NOT_FOUND",
+          message: "Organization not found in tenant scope",
+        });
+        return;
+      }
+
+      const membershipCount = await prisma.membership.count({
+        where: { userId: request.auth.userId },
+      });
+
+      if (membershipCount <= 1) {
+        reply.status(400).send({
+          code: "LAST_ORGANIZATION",
+          message:
+            "Create or join another organization before deleting this one",
+        });
+        return;
+      }
+
+      await prisma.organization.delete({
+        where: { id: request.tenant.organizationId },
+      });
+
+      reply.send({ success: true });
     },
   );
 
@@ -211,7 +375,7 @@ export async function tenancyRoutes(app: FastifyInstance): Promise<void> {
       preHandler: [
         requireAuth,
         requireTenant,
-        requireTenantRole([Role.OWNER, Role.ADMIN]),
+        requirePolicy("invitation:create"),
         requireFeature("advanced_permissions"),
         enforceUsageLimit("members"),
       ],

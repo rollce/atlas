@@ -37,24 +37,69 @@ import {
 } from "@tabler/icons-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { useAuth } from "@/lib/auth-store";
+import { hasRequiredRole } from "@/lib/permissions";
+import type { AtlasRole } from "@/lib/types";
 
-const navItems = [
+const navItems: Array<{
+  href: string;
+  label: string;
+  icon: typeof IconLayoutDashboard;
+  roles?: AtlasRole[];
+}> = [
   { href: "/app/dashboard", label: "Dashboard", icon: IconLayoutDashboard },
-  { href: "/app/organizations", label: "Organizations", icon: IconBuilding },
+  {
+    href: "/app/organizations",
+    label: "Organizations",
+    icon: IconBuilding,
+    roles: ["OWNER", "ADMIN"],
+  },
   { href: "/app/projects", label: "Projects", icon: IconFolders },
   { href: "/app/tasks", label: "Tasks", icon: IconMenu2 },
   { href: "/app/clients", label: "Clients", icon: IconUserStar },
-  { href: "/app/members", label: "Members", icon: IconUsersGroup },
-  { href: "/app/billing", label: "Billing", icon: IconCreditCard },
-  { href: "/app/audit", label: "Audit", icon: IconFileSearch },
+  {
+    href: "/app/members",
+    label: "Members",
+    icon: IconUsersGroup,
+    roles: ["OWNER", "ADMIN"],
+  },
+  {
+    href: "/app/billing",
+    label: "Billing",
+    icon: IconCreditCard,
+    roles: ["OWNER", "ADMIN", "MANAGER"],
+  },
+  {
+    href: "/app/audit",
+    label: "Audit",
+    icon: IconFileSearch,
+    roles: ["OWNER", "ADMIN", "MANAGER"],
+  },
   { href: "/app/profile", label: "Profile", icon: IconSettings },
 ];
 
 export function AtlasShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const {
+    user,
+    organizations,
+    activeOrganizationId,
+    activeRole,
+    setActiveOrganization,
+    logout,
+  } = useAuth();
   const [opened, { toggle }] = useDisclosure();
+  const [loggingOut, setLoggingOut] = useState(false);
+
+  const visibleNavItems = navItems.filter(
+    (item) => !item.roles || hasRequiredRole(activeRole, item.roles),
+  );
+
+  const activeOrganization = organizations.find(
+    (item) => item.id === activeOrganizationId,
+  );
 
   return (
     <AppShell
@@ -78,15 +123,25 @@ export function AtlasShell({ children }: { children: ReactNode }) {
           </Group>
           <Group>
             <Select
-              w={180}
-              data={[
-                { value: "atlas-demo", label: "Atlas Demo Org" },
-                { value: "northline", label: "Northline Studio" },
-              ]}
-              defaultValue="atlas-demo"
+              w={220}
+              data={organizations.map((organization) => ({
+                value: organization.id,
+                label: organization.name,
+              }))}
+              value={activeOrganizationId}
+              onChange={(value) => {
+                if (value) {
+                  setActiveOrganization(value);
+                }
+              }}
               aria-label="Organization switcher"
             />
-            <ActionIcon variant="light" color="teal" size="lg">
+            <ActionIcon
+              variant="light"
+              color="teal"
+              size="lg"
+              disabled={!activeOrganizationId}
+            >
               <IconChartHistogram size={18} />
             </ActionIcon>
           </Group>
@@ -99,7 +154,7 @@ export function AtlasShell({ children }: { children: ReactNode }) {
             Navigation
           </Text>
           <Stack gap={6}>
-            {navItems.map((item) => (
+            {visibleNavItems.map((item) => (
               <NavLink
                 key={item.href}
                 component={Link}
@@ -130,7 +185,14 @@ export function AtlasShell({ children }: { children: ReactNode }) {
               Plan Usage
             </Text>
             <Text size="sm" c="dimmed">
-              Pro plan, 7/15 seats used, 21 active projects.
+              Active org:{" "}
+              {activeOrganization?.name ?? "No organization selected"}
+            </Text>
+            <Text size="sm" c="dimmed">
+              Role: {activeRole ?? "N/A"}
+            </Text>
+            <Text size="sm" c="dimmed">
+              Signed in as {user?.fullName ?? "Unknown user"}
             </Text>
           </Box>
         </AppShellSection>
@@ -140,10 +202,13 @@ export function AtlasShell({ children }: { children: ReactNode }) {
             fullWidth
             variant="light"
             color="red"
+            loading={loggingOut}
             leftSection={<IconLogout size={16} />}
-            onClick={() => {
-              document.cookie = "atlas_session=; Path=/; Max-Age=0";
+            onClick={async () => {
+              setLoggingOut(true);
+              await logout();
               router.push("/login");
+              setLoggingOut(false);
             }}
           >
             Logout

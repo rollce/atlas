@@ -1,75 +1,188 @@
 # Atlas
 
-Multi-tenant SaaS platform for teams to manage organizations, workspaces, projects, clients, and tasks.
+Production-style multi-tenant SaaS platform for B2B teams.
 
-## Stack
+Atlas demonstrates how to build and operate a real product for multiple organizations:
+tenant isolation, RBAC, billing feature gates, async workers, and production deployment.
 
-- Monorepo: `pnpm` + `turbo`
-- Web: Next.js (App Router) + TypeScript
-- API: Fastify + Prisma + PostgreSQL
-- Worker: BullMQ + Redis
-- Shared: reusable config package + UI package
+## Live URLs
 
-## Monorepo structure
+- App: [https://atlas.rollsev.work](https://atlas.rollsev.work)
+- API: [https://api.atlas.rollsev.work/api/v1](https://api.atlas.rollsev.work/api/v1)
 
-- `apps/web` - public pages + application UI
-- `apps/api` - versioned API (`/api/v1`) and domain services
-- `apps/worker` - async jobs (emails, audit processing, reports)
-- `packages/ui` - shared UI primitives
-- `packages/config` - shared eslint, prettier, and tsconfig presets
+## Why This Project Exists
 
-## Run locally
+Most portfolio apps are single-tenant demos. Atlas focuses on real SaaS complexity:
 
-1. Install dependencies:
-   - `pnpm install`
-2. Copy envs:
-   - `cp .env.example .env`
-3. Start local infra (Postgres + Redis):
-   - `docker compose up -d`
-4. Run migrations and seed:
-   - `pnpm db:migrate`
-   - `pnpm db:seed`
-5. Start all services:
-   - `pnpm dev`
+- one codebase, many organizations (`tenant_id` isolation)
+- roles and permissions (`OWNER`, `ADMIN`, `MANAGER`, `MEMBER`)
+- plan limits and feature gates (`FREE`, `PRO`, `BUSINESS`)
+- background processing with retries, idempotency, dead-letter handling
+- deployable architecture (web + api + worker + postgres + redis)
 
-## Startup scripts
+## Monorepo
 
-- `scripts/start-api.sh` - optionally runs `prisma migrate deploy` on boot, then starts API
-- `scripts/start-web.sh` - starts Next.js production server
-- `scripts/start-worker.sh` - starts BullMQ worker
+```text
+apps/
+  web/      Next.js (public + app UI)
+  api/      Fastify + Prisma + PostgreSQL
+  worker/   BullMQ + Redis jobs
+packages/
+  ui/       shared UI primitives
+  config/   eslint/prettier/tsconfig presets
+```
 
-## Worker reliability
+## Architecture
 
-- Retries: exponential backoff (`WORKER_RETRY_ATTEMPTS`, `WORKER_RETRY_DELAY_MS`)
-- Dead-letter queue: failed jobs after final retry are moved to `dead-letter`
-- Idempotency: jobs with `idempotencyKey` are deduplicated via Redis key (`IDEMPOTENCY_TTL_SECONDS`)
+```mermaid
+flowchart LR
+  A["Browser"] --> B["Next.js Web"]
+  B --> C["Fastify API (/api/v1)"]
+  C --> D["PostgreSQL (tenant data)"]
+  C --> E["Redis (queues/idempotency)"]
+  E --> F["Worker (BullMQ)"]
+  C --> G["Audit + Billing Gate Layer"]
+```
 
-## Tenancy & RBAC API (MVP)
+## Core Features
 
-- `GET /api/v1/organizations` - list organizations where current user has membership
-- `POST /api/v1/organizations` - create organization and assign current user as `OWNER`
-- `GET /api/v1/tenant/context` - resolve current tenant context
-- `GET /api/v1/tenant/members` - list organization members
-- `GET /api/v1/tenant/invitations` - list active invitations for organization
-- `POST /api/v1/tenant/invitations` - invite member by email (`OWNER` / `ADMIN`)
-- `POST /api/v1/tenant/invitations/accept` - accept invite token and join organization
-- `GET /api/v1/tenant/billing/usage` - plan limits + current usage snapshot
-- `GET /api/v1/tenant/billing/invoices` - mock invoice history feed for billing page
+### Auth and Sessions
+
+- register/login/logout
+- refresh token rotation
+- forgot/reset password
+- session/device tracking
+- brute-force protection baseline
+
+### Tenancy and Permissions
+
+- tenant resolution via `x-organization-id` header
+- strict tenant-bound queries in all tenant endpoints
+- membership model and invite/accept flow
+- RBAC guard + policy layer for resource actions
+- frontend permission mirroring (action availability by role)
+
+### Domain Modules
+
+- organizations, workspaces, clients, projects, tasks
+- filtering, sorting, search, pagination
+- optimistic concurrency for task updates (`expectedVersion`)
+- audit logs for critical mutations
+
+### Billing Architecture
+
+- plans and subscriptions
+- feature gates (`advanced_permissions`, `audit_logs`, etc.)
+- usage limits (`projects`, `members`, `storage`)
+- usage/invoice endpoints for billing UI
+
+### Worker Reliability
+
+- retry policy with backoff
+- dead-letter queue for failed jobs
+- idempotency key deduplication via Redis TTL
+- structured job lifecycle logging
+
+### Frontend UX
+
+- public pages: landing, pricing, auth pages
+- app shell with tenant switcher
+- authenticated session bootstrap store
+- loading/empty/error states across core pages
+- table and board views with stateful filters/pagination
+
+## API Highlights
+
+### Auth
+
+- `POST /api/v1/auth/register`
+- `POST /api/v1/auth/login`
+- `POST /api/v1/auth/refresh`
+- `POST /api/v1/auth/logout`
+- `POST /api/v1/auth/forgot-password`
+- `POST /api/v1/auth/reset-password`
+
+### Tenant and Organization
+
+- `GET /api/v1/organizations`
+- `POST /api/v1/organizations`
+- `PATCH /api/v1/organizations/:id`
+- `DELETE /api/v1/organizations/:id`
+- `GET /api/v1/tenant/context`
+- `GET /api/v1/tenant/members`
+- `GET /api/v1/tenant/invitations`
+- `POST /api/v1/tenant/invitations`
+- `POST /api/v1/tenant/invitations/accept`
+
+### Work Domain
+
 - `GET/POST/PATCH/DELETE /api/v1/tenant/workspaces`
 - `GET/POST/PATCH/DELETE /api/v1/tenant/clients`
 - `GET/POST/PATCH/DELETE /api/v1/tenant/projects`
-- `GET/POST/PATCH/DELETE /api/v1/tenant/tasks` (`PATCH` supports `expectedVersion` for optimistic concurrency)
-- `GET /api/v1/tenant/audit-logs` (plan-gated)
+- `GET/POST/PATCH/DELETE /api/v1/tenant/tasks`
+- `GET /api/v1/tenant/audit-logs` (feature-gated)
 
-Use `x-organization-id` header for tenant-scoped endpoints when a user belongs to multiple organizations.
+### Billing
 
-## Quality gates
+- `GET /api/v1/tenant/billing/usage`
+- `GET /api/v1/tenant/billing/invoices`
 
-- Lint: `pnpm lint`
-- Typecheck: `pnpm typecheck`
-- Test: `pnpm test`
-- Format check: `pnpm format:check`
+## Local Setup
 
-## CI
+1. Install dependencies:
+   - `pnpm install`
+2. Create env file:
+   - `cp .env.example .env`
+3. Start infrastructure:
+   - `docker compose up -d`
+4. Apply DB migration and seed:
+   - `pnpm db:migrate`
+   - `pnpm db:seed`
+5. Start all apps:
+   - `pnpm dev`
 
-GitHub Actions runs lint, typecheck, and tests on every push/PR.
+## Quality Gates
+
+- `pnpm lint`
+- `pnpm typecheck`
+- `pnpm test`
+- `pnpm format:check`
+
+## Deployment
+
+Railway services:
+
+- `web`
+- `api`
+- `worker`
+- `postgresql`
+- `redis`
+
+Custom domains:
+
+- `atlas.rollsev.work` -> web
+- `api.atlas.rollsev.work` -> api
+
+## Current Status
+
+Atlas is actively developed as an open-source portfolio SaaS.
+
+Completed:
+
+- multi-tenant foundation
+- RBAC + policy guards
+- organization/workspace/project/task/client CRUD
+- worker reliability baseline
+- production deployment baseline
+
+Planned next:
+
+- comments and attachments
+- mock checkout + billing webhooks
+- e2e flows and smoke suites
+- observability dashboards and alert channel
+
+## License
+
+This project is licensed under the MIT License.
+See [LICENSE](./LICENSE).

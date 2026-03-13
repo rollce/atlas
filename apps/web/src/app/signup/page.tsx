@@ -15,6 +15,12 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { z } from "zod";
 import { apiRequest } from "@/lib/api";
+import { useAuth } from "@/lib/auth-store";
+import type {
+  OrganizationSummary,
+  SessionTokens,
+  UserSummary,
+} from "@/lib/types";
 
 const schema = z.object({
   fullName: z.string().min(2),
@@ -25,6 +31,7 @@ const schema = z.object({
 
 export default function SignupPage() {
   const router = useRouter();
+  const { completeAuthSession } = useAuth();
   const [loading, setLoading] = useState(false);
   const [fullName, setFullName] = useState("Denis Rollsev");
   const [organizationName, setOrganizationName] = useState("Rollsev Labs");
@@ -62,13 +69,34 @@ export default function SignupPage() {
             setLoading(true);
             try {
               const payload = await apiRequest<{
-                tokens: { sessionId: string };
+                user: UserSummary;
+                organization: {
+                  id: string;
+                  name: string;
+                  slug: string;
+                };
+                tokens: SessionTokens;
               }>("/auth/register", {
                 method: "POST",
                 body: parsed.data,
               });
 
-              document.cookie = `atlas_session=${payload.tokens.sessionId}; Path=/; Max-Age=${60 * 60 * 24 * 30}`;
+              const organizations: OrganizationSummary[] = [
+                {
+                  id: payload.organization.id,
+                  name: payload.organization.name,
+                  slug: payload.organization.slug,
+                  role: "OWNER",
+                },
+              ];
+
+              completeAuthSession({
+                user: payload.user,
+                tokens: payload.tokens,
+                organizations,
+                activeOrganizationId: payload.organization.id,
+              });
+
               notifications.show({
                 color: "teal",
                 title: "Workspace created",
