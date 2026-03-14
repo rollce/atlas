@@ -12,7 +12,14 @@ export const registerSchema = z.object({
   email: z.string().email(),
   password: passwordRules,
   fullName: z.string().min(2).max(120),
-  organizationName: z.string().min(2).max(120).optional(),
+  organizationName: z.preprocess((value) => {
+    if (typeof value !== "string") {
+      return value;
+    }
+
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  }, z.string().min(2).max(120).optional()),
 });
 
 export const loginSchema = z.object({

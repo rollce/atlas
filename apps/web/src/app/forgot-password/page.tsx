@@ -11,6 +11,7 @@ import {
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
 import { useState } from "react";
+import { AltchaWidget } from "@/components/altcha-widget";
 import { apiRequest } from "@/lib/api";
 
 export default function ForgotPasswordPage() {
@@ -27,6 +28,20 @@ export default function ForgotPasswordPage() {
         <form
           onSubmit={async (event) => {
             event.preventDefault();
+            const formData = new FormData(event.currentTarget);
+            const altchaPayload = formData.get("altcha");
+            if (
+              typeof altchaPayload !== "string" ||
+              altchaPayload.length < 20
+            ) {
+              notifications.show({
+                color: "red",
+                title: "Verification required",
+                message: "Please complete the ALTCHA verification first",
+              });
+              return;
+            }
+
             setLoading(true);
             try {
               const result = await apiRequest<{
@@ -34,7 +49,10 @@ export default function ForgotPasswordPage() {
                 message: string;
               }>("/auth/forgot-password", {
                 method: "POST",
-                body: { email },
+                body: {
+                  email,
+                  altcha: altchaPayload,
+                },
               });
 
               notifications.show({
@@ -63,6 +81,7 @@ export default function ForgotPasswordPage() {
               value={email}
               onChange={(event) => setEmail(event.currentTarget.value)}
             />
+            <AltchaWidget />
             <Button type="submit" color="teal" loading={loading}>
               Generate token
             </Button>

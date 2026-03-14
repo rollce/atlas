@@ -1,8 +1,10 @@
 import { PlanCode, Role } from "@prisma/client";
+import { createChallenge, verifySolution } from "altcha-lib";
 import bcrypt from "bcryptjs";
 import crypto from "node:crypto";
 import type { FastifyInstance, FastifyReply } from "fastify";
 import { z } from "zod";
+import { env } from "../../config/env.js";
 import { prisma } from "../../lib/prisma.js";
 import {
   clearLoginFailures,
@@ -58,6 +60,48 @@ function parseBody<TSchema extends z.ZodTypeAny>(
   return parsed.data;
 }
 
+const altchaPayloadSchema = z.object({
+  altcha: z.string().min(20),
+});
+
+const authRateLimitConfig = {
+  rateLimit: {
+    max: 15,
+    timeWindow: "1 minute",
+  },
+} as const;
+
+const altchaHmacKey = env.ALTCHA_HMAC_KEY ?? env.JWT_ACCESS_SECRET;
+
+async function verifyAltchaFromBody(
+  body: unknown,
+  reply: FastifyReply,
+): Promise<boolean> {
+  if (env.NODE_ENV === "test") {
+    return true;
+  }
+
+  const parsed = altchaPayloadSchema.safeParse(body);
+  if (!parsed.success) {
+    reply.status(400).send({
+      code: "ALTCHA_REQUIRED",
+      message: "Complete verification challenge before submitting this form",
+    });
+    return false;
+  }
+
+  const verified = await verifySolution(parsed.data.altcha, altchaHmacKey);
+  if (!verified) {
+    reply.status(400).send({
+      code: "ALTCHA_INVALID",
+      message: "Verification challenge failed",
+    });
+    return false;
+  }
+
+  return true;
+}
+
 async function createSessionWithTokens(params: {
   userId: string;
   userAgent?: string;
@@ -98,151 +142,194 @@ async function createSessionWithTokens(params: {
 }
 
 export async function authRoutes(app: FastifyInstance): Promise<void> {
-  app.post("/api/v1/auth/register", async (request, reply) => {
-    const body = parseBody(registerSchema, request.body, reply);
-    if (!body) {
-      return;
-    }
-
-    const existing = await prisma.user.findUnique({
-      where: { email: body.email },
-    });
-    if (existing) {
-      reply.status(409).send({
-        code: "EMAIL_ALREADY_EXISTS",
-        message: "Email is already registered",
+  app.get(
+    "/api/v1/auth/altcha",
+    {
+      config: {
+        rateLimit: {
+          max: 60,
+          timeWindow: "1 minute",
+        },
+      },
+    },
+    async (_request, reply) => {
+      const challenge = await createChallenge({
+        hmacKey: altchaHmacKey,
+        maxnumber: 100_000,
+        expires: new Date(Date.now() + 2 * 60 * 1000),
       });
-      return;
-    }
 
-    const passwordHash = await bcrypt.hash(body.password, 12);
+      reply.send(challenge);
+    },
+  );
 
-    const user = await prisma.user.create({
-      data: {
-        email: body.email,
-        fullName: body.fullName,
-        passwordHash,
-      },
-    });
+  app.post(
+    "/api/v1/auth/register",
+    { config: authRateLimitConfig },
+    async (request, reply) => {
+      if (!(await verifyAltchaFromBody(request.body, reply))) {
+        return;
+      }
 
-    const organization = await prisma.organization.create({
-      data: {
-        name: body.organizationName ?? `${body.fullName}'s Org`,
-        slug: makeSlug(body.organizationName ?? body.fullName),
-        memberships: {
-          create: {
-            userId: user.id,
-            role: Role.OWNER,
-          },
-        },
-        subscriptions: {
-          create: {
-            planCode: PlanCode.FREE,
-            status: "trial",
-            currentPeriodStart: new Date(),
-            currentPeriodEnd: new Date(Date.now() + 14 * 24 * 3600 * 1000),
-            trialEndsAt: new Date(Date.now() + 14 * 24 * 3600 * 1000),
-          },
-        },
-      },
-    });
+      const body = parseBody(registerSchema, request.body, reply);
+      if (!body) {
+        return;
+      }
 
-    const tokens = await createSessionWithTokens({
-      userId: user.id,
-      userAgent: request.headers["user-agent"],
-      ipAddress: request.ip,
-    });
-
-    reply.status(201).send({
-      user: {
-        id: user.id,
-        email: user.email,
-        fullName: user.fullName,
-      },
-      organization: {
-        id: organization.id,
-        name: organization.name,
-        slug: organization.slug,
-      },
-      tokens,
-    });
-  });
-
-  app.post("/api/v1/auth/login", async (request, reply) => {
-    const body = parseBody(loginSchema, request.body, reply);
-    if (!body) {
-      return;
-    }
-
-    const attemptKey = `${body.email}:${request.ip}`;
-
-    try {
-      assertLoginAllowed(attemptKey);
-    } catch (error) {
-      const statusCode =
-        (error as Error & { statusCode?: number }).statusCode ?? 429;
-      reply.status(statusCode).send({
-        code: "TOO_MANY_ATTEMPTS",
-        message: (error as Error).message,
+      const existing = await prisma.user.findUnique({
+        where: { email: body.email },
       });
-      return;
-    }
+      if (existing) {
+        reply.status(409).send({
+          code: "EMAIL_ALREADY_EXISTS",
+          message: "Email is already registered",
+        });
+        return;
+      }
 
-    const user = await prisma.user.findUnique({
-      where: { email: body.email },
-      include: {
-        memberships: {
-          include: {
-            organization: true,
+      const passwordHash = await bcrypt.hash(body.password, 12);
+
+      const user = await prisma.user.create({
+        data: {
+          email: body.email,
+          fullName: body.fullName,
+          passwordHash,
+        },
+      });
+
+      const organization = await prisma.organization.create({
+        data: {
+          name: body.organizationName ?? `${body.fullName}'s Org`,
+          slug: makeSlug(body.organizationName ?? body.fullName),
+          memberships: {
+            create: {
+              userId: user.id,
+              role: Role.OWNER,
+            },
+          },
+          subscriptions: {
+            create: {
+              planCode: PlanCode.FREE,
+              status: "trial",
+              currentPeriodStart: new Date(),
+              currentPeriodEnd: new Date(Date.now() + 14 * 24 * 3600 * 1000),
+              trialEndsAt: new Date(Date.now() + 14 * 24 * 3600 * 1000),
+            },
           },
         },
-      },
-    });
+      });
 
-    if (!user) {
-      recordLoginFailure(attemptKey);
-      reply
-        .status(401)
-        .send({ code: "INVALID_CREDENTIALS", message: "Invalid credentials" });
-      return;
-    }
+      const tokens = await createSessionWithTokens({
+        userId: user.id,
+        userAgent: request.headers["user-agent"],
+        ipAddress: request.ip,
+      });
 
-    const validPassword = await bcrypt.compare(
-      body.password,
-      user.passwordHash,
-    );
-    if (!validPassword) {
-      recordLoginFailure(attemptKey);
-      reply
-        .status(401)
-        .send({ code: "INVALID_CREDENTIALS", message: "Invalid credentials" });
-      return;
-    }
+      reply.status(201).send({
+        user: {
+          id: user.id,
+          email: user.email,
+          fullName: user.fullName,
+        },
+        organization: {
+          id: organization.id,
+          name: organization.name,
+          slug: organization.slug,
+        },
+        tokens,
+      });
+    },
+  );
 
-    clearLoginFailures(attemptKey);
+  app.post(
+    "/api/v1/auth/login",
+    { config: authRateLimitConfig },
+    async (request, reply) => {
+      if (!(await verifyAltchaFromBody(request.body, reply))) {
+        return;
+      }
 
-    const tokens = await createSessionWithTokens({
-      userId: user.id,
-      userAgent: request.headers["user-agent"],
-      ipAddress: request.ip,
-    });
+      const body = parseBody(loginSchema, request.body, reply);
+      if (!body) {
+        return;
+      }
 
-    reply.send({
-      user: {
-        id: user.id,
-        email: user.email,
-        fullName: user.fullName,
-        emailVerified: user.emailVerified,
-      },
-      organizations: user.memberships.map((membership) => ({
-        id: membership.organization.id,
-        name: membership.organization.name,
-        slug: membership.organization.slug,
-        role: membership.role,
-      })),
-      tokens,
-    });
-  });
+      const attemptKey = `${body.email}:${request.ip}`;
+
+      try {
+        assertLoginAllowed(attemptKey);
+      } catch (error) {
+        const statusCode =
+          (error as Error & { statusCode?: number }).statusCode ?? 429;
+        reply.status(statusCode).send({
+          code: "TOO_MANY_ATTEMPTS",
+          message: (error as Error).message,
+        });
+        return;
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { email: body.email },
+        include: {
+          memberships: {
+            include: {
+              organization: true,
+            },
+          },
+        },
+      });
+
+      if (!user) {
+        recordLoginFailure(attemptKey);
+        reply
+          .status(401)
+          .send({
+            code: "INVALID_CREDENTIALS",
+            message: "Invalid credentials",
+          });
+        return;
+      }
+
+      const validPassword = await bcrypt.compare(
+        body.password,
+        user.passwordHash,
+      );
+      if (!validPassword) {
+        recordLoginFailure(attemptKey);
+        reply
+          .status(401)
+          .send({
+            code: "INVALID_CREDENTIALS",
+            message: "Invalid credentials",
+          });
+        return;
+      }
+
+      clearLoginFailures(attemptKey);
+
+      const tokens = await createSessionWithTokens({
+        userId: user.id,
+        userAgent: request.headers["user-agent"],
+        ipAddress: request.ip,
+      });
+
+      reply.send({
+        user: {
+          id: user.id,
+          email: user.email,
+          fullName: user.fullName,
+          emailVerified: user.emailVerified,
+        },
+        organizations: user.memberships.map((membership) => ({
+          id: membership.organization.id,
+          name: membership.organization.name,
+          slug: membership.organization.slug,
+          role: membership.role,
+        })),
+        tokens,
+      });
+    },
+  );
 
   app.post("/api/v1/auth/refresh", async (request, reply) => {
     const body = parseBody(refreshSchema, request.body, reply);
@@ -335,55 +422,65 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     reply.send({ success: true });
   });
 
-  app.post("/api/v1/auth/forgot-password", async (request, reply) => {
-    const body = parseBody(forgotPasswordSchema, request.body, reply);
-    if (!body) {
-      return;
-    }
+  app.post(
+    "/api/v1/auth/forgot-password",
+    { config: authRateLimitConfig },
+    async (request, reply) => {
+      if (!(await verifyAltchaFromBody(request.body, reply))) {
+        return;
+      }
 
-    const user = await prisma.user.findUnique({ where: { email: body.email } });
+      const body = parseBody(forgotPasswordSchema, request.body, reply);
+      if (!body) {
+        return;
+      }
 
-    let mockResetToken: string | undefined;
-    if (user) {
-      const token = crypto.randomBytes(24).toString("hex");
-      mockResetToken = token;
-
-      await prisma.passwordResetToken.create({
-        data: {
-          userId: user.id,
-          tokenHash: hashToken(token),
-          expiresAt: new Date(Date.now() + 30 * 60 * 1000),
-        },
+      const user = await prisma.user.findUnique({
+        where: { email: body.email },
       });
 
-      await prisma.auditLog
-        .create({
-          data: {
-            organizationId:
-              (
-                await prisma.membership.findFirst({
-                  where: { userId: user.id },
-                  select: { organizationId: true },
-                })
-              )?.organizationId ?? "unknown-org",
-            actorId: user.id,
-            action: "auth.forgot_password_requested",
-            entityType: "user",
-            entityId: user.id,
-          },
-        })
-        .catch(() => {
-          // Not all users have organizations in early development.
-        });
-    }
+      let mockResetToken: string | undefined;
+      if (user) {
+        const token = crypto.randomBytes(24).toString("hex");
+        mockResetToken = token;
 
-    reply.send({
-      message:
-        "If the account exists, password reset instructions were generated.",
-      mockResetToken:
-        process.env.NODE_ENV === "development" ? mockResetToken : undefined,
-    });
-  });
+        await prisma.passwordResetToken.create({
+          data: {
+            userId: user.id,
+            tokenHash: hashToken(token),
+            expiresAt: new Date(Date.now() + 30 * 60 * 1000),
+          },
+        });
+
+        await prisma.auditLog
+          .create({
+            data: {
+              organizationId:
+                (
+                  await prisma.membership.findFirst({
+                    where: { userId: user.id },
+                    select: { organizationId: true },
+                  })
+                )?.organizationId ?? "unknown-org",
+              actorId: user.id,
+              action: "auth.forgot_password_requested",
+              entityType: "user",
+              entityId: user.id,
+            },
+          })
+          .catch(() => {
+            // Not all users have organizations in early development.
+          });
+      }
+
+      reply.send({
+        message:
+          "If the account exists, password reset instructions were generated.",
+        mockResetToken:
+          process.env.NODE_ENV === "development" ? mockResetToken : undefined,
+      });
+    },
+  );
 
   app.post("/api/v1/auth/reset-password", async (request, reply) => {
     const body = parseBody(resetPasswordSchema, request.body, reply);
@@ -431,35 +528,45 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
     reply.send({ success: true });
   });
 
-  app.post("/api/v1/auth/verify-email/request", async (request, reply) => {
-    const body = parseBody(verifyRequestSchema, request.body, reply);
-    if (!body) {
-      return;
-    }
+  app.post(
+    "/api/v1/auth/verify-email/request",
+    { config: authRateLimitConfig },
+    async (request, reply) => {
+      if (!(await verifyAltchaFromBody(request.body, reply))) {
+        return;
+      }
 
-    const user = await prisma.user.findUnique({ where: { email: body.email } });
-    let mockVerifyToken: string | undefined;
+      const body = parseBody(verifyRequestSchema, request.body, reply);
+      if (!body) {
+        return;
+      }
 
-    if (user && !user.emailVerified) {
-      const token = crypto.randomBytes(24).toString("hex");
-      mockVerifyToken = token;
-
-      await prisma.emailVerificationToken.create({
-        data: {
-          userId: user.id,
-          tokenHash: hashToken(token),
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        },
+      const user = await prisma.user.findUnique({
+        where: { email: body.email },
       });
-    }
+      let mockVerifyToken: string | undefined;
 
-    reply.send({
-      message:
-        "If the account exists, verification instructions were generated.",
-      mockVerifyToken:
-        process.env.NODE_ENV === "development" ? mockVerifyToken : undefined,
-    });
-  });
+      if (user && !user.emailVerified) {
+        const token = crypto.randomBytes(24).toString("hex");
+        mockVerifyToken = token;
+
+        await prisma.emailVerificationToken.create({
+          data: {
+            userId: user.id,
+            tokenHash: hashToken(token),
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+          },
+        });
+      }
+
+      reply.send({
+        message:
+          "If the account exists, verification instructions were generated.",
+        mockVerifyToken:
+          process.env.NODE_ENV === "development" ? mockVerifyToken : undefined,
+      });
+    },
+  );
 
   app.post("/api/v1/auth/verify-email/confirm", async (request, reply) => {
     const body = parseBody(verifyConfirmSchema, request.body, reply);

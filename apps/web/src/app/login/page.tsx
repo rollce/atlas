@@ -11,9 +11,11 @@ import {
   Title,
 } from "@mantine/core";
 import { notifications } from "@mantine/notifications";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { z } from "zod";
+import { AltchaWidget } from "@/components/altcha-widget";
 import { apiRequest } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import type {
@@ -32,8 +34,8 @@ function LoginPageContent() {
   const searchParams = useSearchParams();
   const { completeAuthSession } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [email, setEmail] = useState("owner@atlas.demo");
-  const [password, setPassword] = useState("Password123");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   return (
     <Container size={460} py={80}>
@@ -44,10 +46,31 @@ function LoginPageContent() {
         <Text c="dimmed" size="sm" mb="lg">
           Access tenant dashboard, projects, billing, and audit logs.
         </Text>
+        <Text c="dimmed" size="sm" mb="lg">
+          New client?{" "}
+          <Text component={Link} href="/signup" c="teal.3">
+            Create account
+          </Text>
+          .
+        </Text>
 
         <form
           onSubmit={async (event) => {
             event.preventDefault();
+            const formData = new FormData(event.currentTarget);
+            const altchaPayload = formData.get("altcha");
+            if (
+              typeof altchaPayload !== "string" ||
+              altchaPayload.length < 20
+            ) {
+              notifications.show({
+                color: "red",
+                title: "Verification required",
+                message: "Please complete the ALTCHA verification first",
+              });
+              return;
+            }
+
             const parsed = schema.safeParse({ email, password });
             if (!parsed.success) {
               notifications.show({
@@ -66,7 +89,10 @@ function LoginPageContent() {
                 tokens: SessionTokens;
               }>("/auth/login", {
                 method: "POST",
-                body: parsed.data,
+                body: {
+                  ...parsed.data,
+                  altcha: altchaPayload,
+                },
               });
 
               completeAuthSession({
@@ -102,16 +128,17 @@ function LoginPageContent() {
           <Stack>
             <TextInput
               label="Email"
-              placeholder="owner@atlas.demo"
+              placeholder="you@company.com"
               value={email}
               onChange={(event) => setEmail(event.currentTarget.value)}
             />
             <PasswordInput
               label="Password"
-              placeholder="Password123"
+              placeholder="Enter your password"
               value={password}
               onChange={(event) => setPassword(event.currentTarget.value)}
             />
+            <AltchaWidget />
             <Button type="submit" color="teal" loading={loading}>
               Login
             </Button>

@@ -1,5 +1,6 @@
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
+import rateLimit from "@fastify/rate-limit";
 import type { FastifyInstance } from "fastify";
 import { env } from "../config/env.js";
 
@@ -24,5 +25,15 @@ export async function registerSecurityPlugins(
       callback(new Error("Origin is not allowed"), false);
     },
     credentials: true,
+  });
+
+  await app.register(rateLimit, {
+    global: false,
+    max: 200,
+    timeWindow: "1 minute",
+    errorResponseBuilder: () => ({
+      code: "RATE_LIMITED",
+      message: "Too many requests, please retry in a minute.",
+    }),
   });
 }

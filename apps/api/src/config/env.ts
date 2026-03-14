@@ -14,6 +14,7 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string().min(24),
   ACCESS_TOKEN_TTL: z.string().min(2),
   REFRESH_TOKEN_TTL: z.string().min(2),
+  ALTCHA_HMAC_KEY: z.string().min(16).optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);

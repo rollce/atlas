@@ -14,6 +14,7 @@ import { notifications } from "@mantine/notifications";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { z } from "zod";
+import { AltchaWidget } from "@/components/altcha-widget";
 import { apiRequest } from "@/lib/api";
 import { useAuth } from "@/lib/auth-store";
 import type {
@@ -24,7 +25,7 @@ import type {
 
 const schema = z.object({
   fullName: z.string().min(2),
-  organizationName: z.string().min(2),
+  organizationName: z.string().trim().max(120).optional(),
   email: z.string().email(),
   password: z.string().min(8),
 });
@@ -33,24 +34,38 @@ export default function SignupPage() {
   const router = useRouter();
   const { completeAuthSession } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [fullName, setFullName] = useState("Denis Rollsev");
-  const [organizationName, setOrganizationName] = useState("Rollsev Labs");
-  const [email, setEmail] = useState("denis@rollsev.work");
-  const [password, setPassword] = useState("Password123");
+  const [fullName, setFullName] = useState("");
+  const [organizationName, setOrganizationName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
   return (
     <Container size={500} py={80}>
       <Card withBorder radius="lg" p="xl" bg="dark.7">
         <Title order={2} mb={6}>
-          Create Workspace
+          Create account
         </Title>
         <Text c="dimmed" size="sm" mb="lg">
-          Bootstrap your organization and invite your team in minutes.
+          Sign up as a client and create your workspace in one step.
         </Text>
 
         <form
           onSubmit={async (event) => {
             event.preventDefault();
+            const formData = new FormData(event.currentTarget);
+            const altchaPayload = formData.get("altcha");
+            if (
+              typeof altchaPayload !== "string" ||
+              altchaPayload.length < 20
+            ) {
+              notifications.show({
+                color: "red",
+                title: "Verification required",
+                message: "Please complete the ALTCHA verification first",
+              });
+              return;
+            }
+
             const parsed = schema.safeParse({
               fullName,
               organizationName,
@@ -78,7 +93,15 @@ export default function SignupPage() {
                 tokens: SessionTokens;
               }>("/auth/register", {
                 method: "POST",
-                body: parsed.data,
+                body: {
+                  ...parsed.data,
+                  organizationName:
+                    parsed.data.organizationName &&
+                    parsed.data.organizationName.length > 0
+                      ? parsed.data.organizationName
+                      : undefined,
+                  altcha: altchaPayload,
+                },
               });
 
               const organizations: OrganizationSummary[] = [
@@ -122,7 +145,8 @@ export default function SignupPage() {
               onChange={(e) => setFullName(e.currentTarget.value)}
             />
             <TextInput
-              label="Organization"
+              label="Organization (optional)"
+              placeholder="Your company or team name"
               value={organizationName}
               onChange={(e) => setOrganizationName(e.currentTarget.value)}
             />
@@ -136,6 +160,7 @@ export default function SignupPage() {
               value={password}
               onChange={(e) => setPassword(e.currentTarget.value)}
             />
+            <AltchaWidget />
             <Button type="submit" color="teal" loading={loading}>
               Create account
             </Button>

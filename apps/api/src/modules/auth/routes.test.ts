@@ -16,6 +16,21 @@ afterAll(async () => {
 });
 
 describe("auth route validation", () => {
+  it("returns altcha challenge payload", async () => {
+    const response = await app.inject({
+      method: "GET",
+      url: "/api/v1/auth/altcha",
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toMatchObject({
+      algorithm: expect.any(String),
+      challenge: expect.any(String),
+      salt: expect.any(String),
+      signature: expect.any(String),
+    });
+  });
+
   it("rejects invalid login payload", async () => {
     const response = await app.inject({
       method: "POST",
