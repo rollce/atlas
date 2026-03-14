@@ -36,12 +36,14 @@ type AuthContextValue = {
   organizations: OrganizationSummary[];
   activeOrganizationId: string | null;
   activeRole: AtlasRole | null;
+  tokens: SessionTokens | null;
   completeAuthSession: (params: {
     user: UserSummary;
     tokens: SessionTokens;
     organizations: OrganizationSummary[];
     activeOrganizationId?: string | null;
   }) => void;
+  updateUserProfile: (user: UserSummary) => void;
   setActiveOrganization: (organizationId: string) => void;
   request: <T>(path: string, options?: AuthedRequestOptions) => Promise<T>;
   reloadOrganizations: () => Promise<void>;
@@ -220,6 +222,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [applySession],
   );
 
+  const updateUserProfile = useCallback(
+    (user: UserSummary) => {
+      if (!session) {
+        return;
+      }
+
+      applySession({
+        ...session,
+        user: {
+          ...session.user,
+          ...user,
+        },
+      });
+    },
+    [applySession, session],
+  );
+
   const setActiveOrganization = useCallback(
     (organizationId: string) => {
       if (!session) {
@@ -357,7 +376,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       organizations: session?.organizations ?? [],
       activeOrganizationId: session?.activeOrganizationId ?? null,
       activeRole,
+      tokens: session?.tokens ?? null,
       completeAuthSession,
+      updateUserProfile,
       setActiveOrganization,
       request,
       reloadOrganizations,
@@ -372,6 +393,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       session,
       setActiveOrganization,
       status,
+      updateUserProfile,
     ],
   );
 

@@ -52,3 +52,15 @@ export const verifyRequestSchema = z.object({
 export const verifyConfirmSchema = z.object({
   token: z.string().min(20),
 });
+
+export const updateProfileSchema = z
+  .object({
+    fullName: z.string().trim().min(2).max(120).optional(),
+    email: z.string().trim().toLowerCase().email().optional(),
+  })
+  .refine(
+    (value) => value.fullName !== undefined || value.email !== undefined,
+    {
+      message: "At least one field must be provided",
+    },
+  );

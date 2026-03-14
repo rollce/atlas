@@ -19,6 +19,7 @@ import {
   refreshSchema,
   registerSchema,
   resetPasswordSchema,
+  updateProfileSchema,
   verifyConfirmSchema,
   verifyRequestSchema,
 } from "./schemas.js";
@@ -281,12 +282,10 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
 
       if (!user) {
         recordLoginFailure(attemptKey);
-        reply
-          .status(401)
-          .send({
-            code: "INVALID_CREDENTIALS",
-            message: "Invalid credentials",
-          });
+        reply.status(401).send({
+          code: "INVALID_CREDENTIALS",
+          message: "Invalid credentials",
+        });
         return;
       }
 
@@ -296,12 +295,10 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       );
       if (!validPassword) {
         recordLoginFailure(attemptKey);
-        reply
-          .status(401)
-          .send({
-            code: "INVALID_CREDENTIALS",
-            message: "Invalid credentials",
-          });
+        reply.status(401).send({
+          code: "INVALID_CREDENTIALS",
+          message: "Invalid credentials",
+        });
         return;
       }
 
@@ -607,6 +604,117 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
   });
 
   app.get(
+    "/api/v1/auth/me",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      if (!request.auth) {
+        reply
+          .status(401)
+          .send({ code: "UNAUTHORIZED", message: "Missing auth context" });
+        return;
+      }
+
+      const user = await prisma.user.findUnique({
+        where: { id: request.auth.userId },
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          emailVerified: true,
+          createdAt: true,
+        },
+      });
+
+      if (!user) {
+        reply.status(404).send({
+          code: "USER_NOT_FOUND",
+          message: "User profile not found",
+        });
+        return;
+      }
+
+      reply.send({ user });
+    },
+  );
+
+  app.patch(
+    "/api/v1/auth/me",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      if (!request.auth) {
+        reply
+          .status(401)
+          .send({ code: "UNAUTHORIZED", message: "Missing auth context" });
+        return;
+      }
+
+      const body = parseBody(updateProfileSchema, request.body, reply);
+      if (!body) {
+        return;
+      }
+
+      if (body.email) {
+        const existing = await prisma.user.findUnique({
+          where: { email: body.email },
+          select: { id: true },
+        });
+
+        if (existing && existing.id !== request.auth.userId) {
+          reply.status(409).send({
+            code: "EMAIL_ALREADY_EXISTS",
+            message: "Email is already registered",
+          });
+          return;
+        }
+      }
+
+      const currentUser = await prisma.user.findUnique({
+        where: { id: request.auth.userId },
+        select: { email: true },
+      });
+
+      if (!currentUser) {
+        reply.status(404).send({
+          code: "USER_NOT_FOUND",
+          message: "User profile not found",
+        });
+        return;
+      }
+
+      const updateData: {
+        fullName?: string;
+        email?: string;
+        emailVerified?: Date | null;
+      } = {};
+
+      if (body.fullName !== undefined) {
+        updateData.fullName = body.fullName;
+      }
+
+      if (body.email !== undefined) {
+        updateData.email = body.email;
+        if (body.email.toLowerCase() !== currentUser.email.toLowerCase()) {
+          updateData.emailVerified = null;
+        }
+      }
+
+      const user = await prisma.user.update({
+        where: { id: request.auth.userId },
+        data: updateData,
+        select: {
+          id: true,
+          email: true,
+          fullName: true,
+          emailVerified: true,
+          createdAt: true,
+        },
+      });
+
+      reply.send({ user });
+    },
+  );
+
+  app.get(
     "/api/v1/auth/sessions",
     { preHandler: requireAuth },
     async (request, reply) => {
@@ -633,6 +741,35 @@ export async function authRoutes(app: FastifyInstance): Promise<void> {
       reply.send({
         activeSessionId: request.auth.sessionId,
         sessions,
+      });
+    },
+  );
+
+  app.post(
+    "/api/v1/auth/sessions/revoke-all",
+    { preHandler: requireAuth },
+    async (request, reply) => {
+      if (!request.auth) {
+        reply
+          .status(401)
+          .send({ code: "UNAUTHORIZED", message: "Missing auth context" });
+        return;
+      }
+
+      const result = await prisma.session.updateMany({
+        where: {
+          userId: request.auth.userId,
+          revokedAt: null,
+          id: { not: request.auth.sessionId },
+        },
+        data: {
+          revokedAt: new Date(),
+        },
+      });
+
+      reply.send({
+        success: true,
+        revokedCount: result.count,
       });
     },
   );
