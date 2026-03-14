@@ -66,22 +66,28 @@ export default function ProfilePage() {
     }
 
     let cancelled = false;
+    const abortController = new AbortController();
+    const timeoutId = window.setTimeout(() => abortController.abort(), 10_000);
 
     const loadProfile = async () => {
       setLoading(true);
       try {
-        const payload = await request<MeResponse>("/auth/me");
+        const payload = await request<MeResponse>("/auth/me", {
+          signal: abortController.signal,
+        });
         if (cancelled) {
           return;
         }
 
         setFullName(payload.user.fullName);
         setEmail(payload.user.email);
-        updateUserProfile(payload.user);
       } catch (error) {
         if (cancelled) {
           return;
         }
+
+        setFullName((current) => current || user?.fullName || "");
+        setEmail((current) => current || user?.email || "");
 
         notifications.show({
           color: "red",
@@ -89,6 +95,7 @@ export default function ProfilePage() {
           message: error instanceof Error ? error.message : "Unknown error",
         });
       } finally {
+        window.clearTimeout(timeoutId);
         if (!cancelled) {
           setLoading(false);
         }
@@ -99,8 +106,10 @@ export default function ProfilePage() {
 
     return () => {
       cancelled = true;
+      abortController.abort();
+      window.clearTimeout(timeoutId);
     };
-  }, [request, status, updateUserProfile]);
+  }, [request, status, user?.email, user?.fullName]);
 
   const saveProfile = async () => {
     const nextFullName = fullName.trim();
