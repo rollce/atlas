@@ -14,6 +14,9 @@ export function AltchaWidget({ name = "altcha" }: { name?: string }) {
     hidefooter: true,
     workers: "4",
     name,
-    style: "display:block;margin-top:6px;",
+    style: {
+      display: "block",
+      marginTop: "6px",
+    },
   });
 }
