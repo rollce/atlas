@@ -129,6 +129,9 @@ importers:
       '@tabler/icons-react':
         specifier: ^3.34.1
         version: 3.40.0(react@19.0.0)
+      altcha:
+        specifier: ^2.3.0
+        version: 2.3.0
       next:
         specifier: 15.5.12
         version: 15.5.12(react-dom@19.0.0(react@19.0.0))(react@19.0.0)
@@ -220,6 +223,9 @@ importers:
         version: 5.9.3
 
 packages:
+
+  '@altcha/crypto@0.0.1':
+    resolution: {integrity: sha512-qZMdnoD3lAyvfSUMNtC2adRi666Pxdcw9zqfMU5qBOaJWqpN9K+eqQGWqeiKDMqL0SF+EytNG4kR/Pr/99GJ6g==}
 
   '@babel/code-frame@7.29.0':
     resolution: {integrity: sha512-9NhCeYjq9+3uxgdtp20LSiJXJvN0FeCtNGpJxuMFZ1Kv3cWUNb6DOhJwUvcVCzKGR66cw4njwM6hrJLqgOwbcw==}
@@ -939,6 +945,11 @@ packages:
     cpu: [s390x]
     os: [linux]
 
+  '@rollup/rollup-linux-x64-gnu@4.18.0':
+    resolution: {integrity: sha512-xuglR2rBVHA5UsI8h8UbX4VJ470PtGCf5Vpswh7p2ukaqBGFTnsfzxUBetoWBWymHMxbIG0Cmx7Y9qDZzr648w==}
+    cpu: [x64]
+    os: [linux]
+
   '@rollup/rollup-linux-x64-gnu@4.59.0':
     resolution: {integrity: sha512-3AHmtQq/ppNuUspKAlvA8HtLybkDflkMuLK4DPo77DfthRb71V84/c4MlWJXixZz4uruIH4uaa07IqoAkG64fg==}
     cpu: [x64]
@@ -1146,6 +1157,9 @@ packages:
 
   altcha-lib@1.4.1:
     resolution: {integrity: sha512-MAXP9tkQOA2SE9Gwoe3LAcZbcDpp3XzYc5GDVej/y3eMNaFG/eVnRY1/7SGFW0RPsViEjPf+hi5eANjuZrH1xA==}
+
+  altcha@2.3.0:
+    resolution: {integrity: sha512-vl8I0dQvSQB7/Mx09XuWZ1+LdSP7vEda6OLbg9kUQ2ZO2LT7MzgUyLK7Iips+GAV6c0ntVcS1XWOqhEPpwbDhQ==}
 
   ansi-escapes@7.3.0:
     resolution: {integrity: sha512-BvU8nYgGQBxcmMuEeUEmNTvrMVjJNSH7RgW24vXexN4Ven6qCvy4TntnvlnwnMLTVlcRQQdbRY8NKnaIoeWDNg==}
@@ -2653,6 +2667,8 @@ packages:
 
 snapshots:
 
+  '@altcha/crypto@0.0.1': {}
+
   '@babel/code-frame@7.29.0':
     dependencies:
       '@babel/helper-validator-identifier': 7.28.5
@@ -3249,6 +3265,9 @@ snapshots:
   '@rollup/rollup-linux-s390x-gnu@4.59.0':
     optional: true
 
+  '@rollup/rollup-linux-x64-gnu@4.18.0':
+    optional: true
+
   '@rollup/rollup-linux-x64-gnu@4.59.0':
     optional: true
 
@@ -3485,6 +3504,12 @@ snapshots:
       require-from-string: 2.0.2
 
   altcha-lib@1.4.1: {}
+
+  altcha@2.3.0:
+    dependencies:
+      '@altcha/crypto': 0.0.1
+    optionalDependencies:
+      '@rollup/rollup-linux-x64-gnu': 4.18.0
 
   ansi-escapes@7.3.0:
     dependencies:
