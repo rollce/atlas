@@ -37,6 +37,13 @@ function LoginPageContent() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const redirectToApp = (targetPath: string) => {
+    router.replace(targetPath);
+    if (typeof window !== "undefined") {
+      window.location.assign(targetPath);
+    }
+  };
+
   return (
     <Container size={460} py={80}>
       <Card withBorder radius="lg" p="xl" bg="dark.7">
@@ -108,11 +115,11 @@ function LoginPageContent() {
 
               const redirect = searchParams.get("redirect");
               if (redirect && redirect.startsWith("/app")) {
-                router.push(redirect);
+                redirectToApp(redirect);
                 return;
               }
 
-              router.push("/app/dashboard");
+              redirectToApp("/app/dashboard");
             } catch (error) {
               notifications.show({
                 color: "red",

@@ -39,6 +39,13 @@ export default function SignupPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
+  const redirectToApp = (targetPath: string) => {
+    router.replace(targetPath);
+    if (typeof window !== "undefined") {
+      window.location.assign(targetPath);
+    }
+  };
+
   return (
     <Container size={500} py={80}>
       <Card withBorder radius="lg" p="xl" bg="dark.7">
@@ -125,7 +132,7 @@ export default function SignupPage() {
                 title: "Workspace created",
                 message: "Welcome to Atlas",
               });
-              router.push("/app/dashboard");
+              redirectToApp("/app/dashboard");
             } catch (error) {
               notifications.show({
                 color: "red",
