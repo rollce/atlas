@@ -3,18 +3,18 @@ WORKDIR /app
 RUN corepack enable
 
 FROM base AS deps
-COPY package.json pnpm-workspace.yaml turbo.json ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml turbo.json ./
 COPY apps/web/package.json apps/web/package.json
-COPY packages/ui/package.json packages/ui/package.json
 COPY packages/config/package.json packages/config/package.json
 RUN pnpm install --filter @atlas/web... --frozen-lockfile=false
 
 FROM deps AS builder
-COPY . .
+COPY apps/web apps/web
+COPY packages/config packages/config
 RUN pnpm --filter @atlas/web build
 
-FROM base AS runner
-ENV NODE_ENV=production
-COPY --from=builder /app /app
+FROM busybox:1.36.1 AS runner
+WORKDIR /site
+COPY --from=builder /app/apps/web/dist ./
 EXPOSE 3000
-CMD ["sh", "/app/scripts/start-web.sh"]
+CMD ["sh", "-c", "httpd -f -p ${PORT:-3000} -h /site"]

@@ -1,5 +1,10 @@
+const viteApiUrl =
+  (import.meta.env.VITE_API_URL as string | undefined) ?? undefined;
+const legacyApiUrl =
+  (import.meta.env.NEXT_PUBLIC_API_URL as string | undefined) ?? undefined;
+
 export const API_BASE =
-  process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api/v1";
+  viteApiUrl ?? legacyApiUrl ?? "http://localhost:4000/api/v1";
 
 export type RequestOptions = {
   method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";

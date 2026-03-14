@@ -24,7 +24,7 @@ Most portfolio apps are single-tenant demos. Atlas focuses on real SaaS complexi
 
 ```text
 apps/
-  web/      Next.js (public + app UI)
+  web/      Vite + React SPA (public + app UI)
   api/      Fastify + Prisma + PostgreSQL
   worker/   BullMQ + Redis jobs
 packages/
@@ -36,7 +36,7 @@ packages/
 
 ```mermaid
 flowchart LR
-  A["Browser"] --> B["Next.js Web"]
+  A["Browser"] --> B["Vite React Web"]
   B --> C["Fastify API (/api/v1)"]
   C --> D["PostgreSQL (tenant data)"]
   C --> E["Redis (queues/idempotency)"]
